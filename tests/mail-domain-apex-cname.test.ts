@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { applyDomainDns, applyReviewedDomainSetup, connectReviewedDomainRouting, fetchDomainDnsPlan, planDomainDns, reviewDomainSetup, verifyDomainDns, verifyDomainDnsWithSpf, verifyDomainRouting, type DnsRecord } from '../apps/mail/src/server/domains';
 
 const zoneId = 'a'.repeat(32), sendingId = 'b'.repeat(32), websiteId = 'c'.repeat(32), oldMxId = 'd'.repeat(32);
@@ -39,6 +39,9 @@ function fixture(options: { zone?: { name: string; type?: string; status?: strin
 }
 
 describe('Cloudflare zone-apex website CNAME and mail records', () => {
+  beforeEach(() => { vi.spyOn(console, 'warn').mockImplementation(() => {}); });
+  afterEach(() => { vi.restoreAllMocks(); });
+
   it.each([false, true])('preserves the website CNAME through serialized review, adoption and verification (proxied: %s)', async proxied => {
     const state = fixture({ oldProvider: true, proxied });
     const proposal = JSON.parse(JSON.stringify(await reviewDomainSetup(env, 'example.com', zoneId, sendingId, worker, state.fetcher)));
@@ -116,5 +119,12 @@ describe('Cloudflare zone-apex website CNAME and mail records', () => {
     expect(plan.conflicts).toEqual([]);
     await expect(applyDomainDns(env, zoneId, plan, state.fetcher)).rejects.toThrow('dnsPlanStale');
     expect(state.mutations()).toEqual([]);
+  });
+
+  it('logs bounded public zone evidence when apex flattening cannot be established', async () => {
+    const state = fixture({ zone: { name: 'example.com', status: 'active' } });
+    await fetchDomainDnsPlan(env, 'example.com', zoneId, sendingId, state.fetcher);
+    expect(console.warn).toHaveBeenCalledWith('Mail DNS apex CNAME evidence unavailable', { zoneName: 'example.com', zoneType: 'undefined', zoneStatus: 'active', cnameNames: ['example.com'] });
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toContain(env.CF_API_TOKEN);
   });
 });

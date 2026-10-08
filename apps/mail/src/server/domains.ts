@@ -27,7 +27,17 @@ const snapshotOf = (records: DnsRecord[]) => JSON.stringify(records.map(r => ({ 
   priority: r.priority, ttl: r.ttl, proxied: r.proxied, locked: r.locked })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
 type DnsPlanningContext = Pick<DomainDnsPlan, 'apexCnameFlattening'>;
 type CloudflareZone = { name: string; type?: string; status?: string };
-const cloudflareDnsContext = (zone: CloudflareZone, records: DnsRecord[]): DnsPlanningContext => zone.type === 'full' && zone.status === 'active' && records.some(record => record.type === 'CNAME' && nameOf(record.name) === nameOf(zone.name)) ? { apexCnameFlattening: true } : {};
+const cloudflareDnsContext = (zone: CloudflareZone, records: DnsRecord[]): DnsPlanningContext => {
+  const apexCnames = records.filter(record => record.type === 'CNAME' && nameOf(record.name) === nameOf(zone.name));
+  const authoritative = zone.type === 'full' && zone.status === 'active';
+  if (apexCnames.length && !authoritative) console.warn('Mail DNS apex CNAME evidence unavailable', {
+    zoneName: nameOf(zone.name).slice(0, 253),
+    zoneType: typeof zone.type === 'string' ? zone.type.slice(0, 64) : typeof zone.type,
+    zoneStatus: typeof zone.status === 'string' ? zone.status.slice(0, 64) : typeof zone.status,
+    cnameNames: apexCnames.slice(0, 8).map(record => nameOf(record.name).slice(0, 253)),
+  });
+  return authoritative && apexCnames.length ? { apexCnameFlattening: true } : {};
+};
 export function planDomainDns(domain: string, existing: DnsRecord[], providerRequirements: DnsRecord[], context: DnsPlanningContext = {}): DomainDnsPlan {
   domain = nameOf(domain);
   if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain)) throw new Error('invalidDomain');
