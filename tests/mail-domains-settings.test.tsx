@@ -70,7 +70,7 @@ function deliveryPanel(host: HTMLElement) {
  return [...host.querySelectorAll('summary')].find(element => element.textContent === 'Unmatched-address delivery')!.closest('details')!;
 }
 async function confirmDelivery(row: Element) {
- await act(async () => (row.querySelector('button') as HTMLButtonElement).click());
+ await act(async () => (row.querySelector('[role="switch"]') as HTMLButtonElement).click());
  const dialog = document.querySelector('[role="alertdialog"]')!;
  await act(async () => ([...dialog.querySelectorAll('button')].find(button => button.textContent === 'Confirm') as HTMLButtonElement).click());
 }
@@ -83,23 +83,26 @@ test('successive delivery saves preserve the expanded settings, scroll and inbox
  const panel = deliveryPanel(host); panel.open = true;
  const body = host.querySelector('.mail-settings-body') as HTMLElement; body.scrollTop = 240;
  const inbox = host.querySelector('[aria-label="Settings inbox"]') as HTMLSelectElement;
- const rows = panel.querySelectorAll('.mail-inline-actions');
+ const rows = panel.querySelectorAll('.mail-domain-delivery-row');
+ const switches = panel.querySelectorAll<HTMLButtonElement>('[role="switch"]');
+ expect(switches[0].getAttribute('aria-label')).toBe('Unmatched-address delivery for first.test');
+ expect(rows[0].querySelector('label')?.htmlFor).toBe(switches[0].id);
  const readCount = () => vi.mocked(client.call).mock.calls.filter(([method]) => method.endsWith('/get')).length;
  const initialReads = readCount();
  await confirmDelivery(rows[0]);
- expect(rows[0].textContent).toContain('first.test · Off');
- expect((rows[1].querySelector('button') as HTMLButtonElement).disabled).toBe(true);
+ expect(switches[0].getAttribute('aria-checked')).toBe('false');
+ expect(switches[1].disabled).toBe(true);
  expect(inbox.disabled).toBe(true);
  await act(async () => finish());
  expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
  expect(body.scrollTop).toBe(240); expect(inbox.value).toBe('a');
- expect(rows[0].textContent).toContain('first.test · Enabled');
- expect((rows[1].querySelector('button') as HTMLButtonElement).disabled).toBe(false);
+ expect(switches[0].getAttribute('aria-checked')).toBe('true');
+ expect(switches[1].disabled).toBe(false);
  expect(host.textContent).not.toContain('Loading settings');
  await confirmDelivery(rows[1]);
- expect(rows[1].textContent).toContain('second.test · Enabled');
+ expect(switches[1].getAttribute('aria-checked')).toBe('true');
  await confirmDelivery(rows[0]);
- expect(rows[0].textContent).toContain('first.test · Off');
+ expect(switches[0].getAttribute('aria-checked')).toBe('false');
  expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
  expect(body.scrollTop).toBe(240); expect(inbox.value).toBe('a');
  expect(readCount()).toBe(initialReads);
@@ -114,14 +117,15 @@ test('a rejected delivery save keeps its status and expanded panel and can be re
  const client = deliveryFixture(save);
  const host = await render(<Settings client={client} accountId="a" initialSection="Identities" onClose={() => {}} />);
  const panel = deliveryPanel(host); panel.open = true;
- const row = panel.querySelector('.mail-inline-actions')!;
+ const row = panel.querySelector('.mail-domain-delivery-row')!;
+ const control = row.querySelector<HTMLButtonElement>('[role="switch"]')!;
  await confirmDelivery(row);
  expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
- expect(row.textContent).toContain('first.test · Off');
+ expect(control.getAttribute('aria-checked')).toBe('false');
  expect(host.querySelector('[role="alert"]')?.textContent).toContain('Delivery could not be saved.');
- expect((row.querySelector('button') as HTMLButtonElement).disabled).toBe(false);
+ expect(control.disabled).toBe(false);
  await confirmDelivery(row);
- expect(row.textContent).toContain('first.test · Enabled');
+ expect(control.getAttribute('aria-checked')).toBe('true');
  expect(host.querySelector('[role="alert"]')).toBeNull();
  expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
 });

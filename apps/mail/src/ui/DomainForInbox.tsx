@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@open-cloud/ui';
 import { NativeSelect } from '@rebnz/enough-ui/native-select';
+import { Switch } from '@rebnz/enough-ui/switch';
 import { approveDomainReview, loadDomains } from './DomainsSettings';
 import { useMailConfirm } from './use-mail-confirm';
 import DomainSetupReview from './DomainSetupReview';
@@ -47,7 +48,23 @@ export default function DomainForInbox({ client, accountId, configured, onChange
   if (!available.length && !configured.length && !reviewId && !error) return null;
   return <section className="mail-settings-subsection" aria-label="Use an existing domain">
     {dialog}
-    {configured.length > 0 && <details className="mail-secondary-tools"><summary>Unmatched-address delivery</summary><p>Accept mail sent to unconfigured addresses at a domain in this inbox. Leave this off to reject unknown recipients.</p>{configured.map(domain => <div className="mail-inline-actions" key={domain.id}><span>{domain.name} · {domain.catchAllAccountId === accountId ? 'Enabled' : 'Off'}</span><Button variant="outline" size="sm" disabled={busy} onClick={() => void updateDelivery(domain)}>{domain.catchAllAccountId === accountId ? 'Disable' : 'Enable'}</Button></div>)}</details>}
+    {configured.length > 0 && <details className="mail-secondary-tools">
+      <summary>Unmatched-address delivery</summary>
+      <p>Accept mail sent to unconfigured addresses at a domain in this inbox. Leave this off to reject unknown recipients.</p>
+      <ul className="mail-domain-delivery-grid" aria-label="Unmatched-address delivery by domain">
+        {configured.map(domain => {
+          const enabled = domain.catchAllAccountId === accountId;
+          const id = `mail-domain-delivery-${accountId}-${domain.id}`;
+          return <li className="mail-domain-delivery-row" key={domain.id}>
+            <label className="mail-domain-delivery-name" htmlFor={id}>{domain.name}</label>
+            <div className="mail-domain-delivery-control">
+              <span aria-hidden="true">{enabled ? 'On' : 'Off'}</span>
+              <Switch id={id} aria-label={`Unmatched-address delivery for ${domain.name}`} checked={enabled} disabled={busy} onCheckedChange={() => void updateDelivery(domain)} />
+            </div>
+          </li>;
+        })}
+      </ul>
+    </details>}
     {error && <p role="alert">{error}</p>}
     {reviewId ? <DomainSetupReview client={client} accountId={accountId} domainId={reviewId} onBusy={setBusy} onCancel={() => { setReviewId(''); onChanged(); }} onComplete={result => { if (result.status === 'ready') { setReviewId(''); onChanged(); } }} /> : available.length > 0 ? <details className="mail-secondary-tools"><summary>Use a domain from another inbox</summary><p>Enable an existing domain for {client.session.accounts[accountId]?.name}. Review its setup, then add an address here or move one from another inbox. Existing address assignments stay in place.</p><label className="mail-settings-field">Domain<NativeSelect value={selected} disabled={busy} onChange={event => setSelected(event.target.value)}><option value="">Choose a domain</option>{available.map(domain => <option key={domain.name} value={domain.name}>{domain.name}</option>)}</NativeSelect></label><Button variant="outline" disabled={busy || !selected} onClick={() => void enable()}>Review domain for this inbox</Button></details> : null}
   </section>;
