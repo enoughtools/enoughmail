@@ -1,18 +1,18 @@
 import RecipientInput from './RecipientInput';
+import SenderInput from './SenderInput';
 import { completeRecipients, validRecipient } from '../domain/recipients';
 import './compose.css';
 import { Input } from '@rebnz/enough-ui/input';
 import { Textarea } from '@rebnz/enough-ui/textarea';
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@rebnz/enough-ui/button';
-import { NativeSelect } from '@rebnz/enough-ui/native-select';
 import { Label } from '@rebnz/enough-ui/label';
 import { ButtonGroup } from '@rebnz/enough-ui/button-group';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '@rebnz/enough-ui/dropdown-menu';
 import { Attachment, AttachmentContent, AttachmentTitle, AttachmentDescription, AttachmentActions, AttachmentAction } from '@rebnz/enough-ui/attachment';
 import { Bold, Italic, Underline, List, ListOrdered, Paperclip, ImagePlus, Clock, FileText, PenLine, Link2, Trash2, Send, ChevronDown, Maximize2, Minimize2, Minus } from 'lucide-react';
 import {useDialog} from './use-dialog';
-import { discardComposeDraft, recoverNewDraftConflict, saveComposeDraft, chooseSendingIdentity, draftReplacementArgs, createComposeOperation, isConfirmedDraftConflict, isConfirmedRejection, isConfirmedSubmissionRejection, type DraftBaseline, type PendingComposeOperation } from './compose-operations';
+import { discardComposeDraft, recoverNewDraftConflict, saveComposeDraft, chooseSendingIdentity, chooseSendingAddress, resolveComposeIdentity, draftReplacementArgs, createComposeOperation, isConfirmedDraftConflict, isConfirmedRejection, isConfirmedSubmissionRejection, type DraftBaseline, type PendingComposeOperation } from './compose-operations';
 import { addresses, draftCacheKey, type BodyPart, type Email, type GetResult, type Identity, type Mailbox, type MailClient, type SetResult } from './jmap';
 import { cleanComposeHtml as cleanEditorHtml, composeTextHtml as textHtml, composePlainText, quoteMessage, replySubject, forwardSubject, replaceComposeSignature } from './compose-content';
 import { messageHtml, messagePlainText } from './message-body';
@@ -27,9 +27,9 @@ interface Props {
   onManageTemplates?: () => void;
   onManageSignatures?: () => void;
 }
-interface Fields { identityId: string; signatureId?: string; to: string; cc: string; bcc: string; subject: string; body: string; attachments: BodyPart[]; sendAt: string; rich?: boolean; html?: string; replyThread?: { inReplyTo: string[]; references: string[] }; }
+interface Fields { identityId: string; fromEmail: string; signatureId?: string; to: string; cc: string; bcc: string; subject: string; body: string; attachments: BodyPart[]; sendAt: string; rich?: boolean; html?: string; replyThread?: { inReplyTo: string[]; references: string[] }; }
 interface Signature { id: string; name: string; text: string; html: string; }
-interface Recovery { draftBaseline?: DraftBaseline; sourceBlobId?:string; sourceEmailId?:string; fields: Fields; emailId?: string; pendingDraft?: PendingComposeOperation; pendingSubmission?: PendingComposeOperation; pendingDiscard?: PendingComposeOperation; conflicted?: boolean; conflictBackup?: Fields; }
+interface Recovery { draftBaseline?: DraftBaseline; sourceBlobId?:string; sourceEmailId?:string; fields: Fields; emailId?: string; pendingDraft?: PendingComposeOperation; pendingSubmission?: PendingComposeOperation; pendingIdentity?: PendingComposeOperation; pendingDiscard?: PendingComposeOperation; conflicted?: boolean; conflictBackup?: Fields; }
 interface Contact { name?: string; email?: string; emails?: (string | { value?: string; email?: string })[]; }
 const formatAddresses = (items?: { name?: string; email: string }[]|null) => (items || []).map(item => item.email).join(', ');
 const messageIds = (email: Email | undefined, property: 'messageId' | 'inReplyTo' | 'references', header: string): string[] => {
@@ -60,9 +60,9 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
   const serverInitialFields=useRef<Fields|null>(null);
   const recoveredLocally = useRef(false);
   const initial = (): Recovery => {
-    const identity = chooseSendingIdentity(identities, draft, reply);
+    const identity = chooseSendingIdentity(identities, draft, mode === 'forward' ? undefined : reply);
     const fields: Fields = {
-      identityId: identity?.id || '', to: draft?.draftRecipients?.to ?? formatAddresses(draft?.to || (reply ? replyTargets(reply) : undefined)),
+      identityId: identity?.id || '', fromEmail: chooseSendingAddress(identities, draft, mode === 'forward' ? undefined : reply), to: draft?.draftRecipients?.to ?? formatAddresses(draft?.to || (reply ? replyTargets(reply) : undefined)),
       cc: draft?.draftRecipients?.cc ?? formatAddresses(draft?.cc), bcc: draft?.draftRecipients?.bcc ?? formatAddresses(draft?.bcc),
       subject: draft?.subject || (reply ? replySubject(reply.subject) : ''),
       body: draft ? plainBody(draft) : `${identity?.textSignature ? `\n\n${identity.textSignature}` : ''}${reply ? `\n\nOn ${new Date(reply.receivedAt).toLocaleString()}, ${formatAddresses(reply.from)} wrote:\n${plainBody(reply).split('\n').map(line => `> ${line}`).join('\n')}` : ''}`,
@@ -77,7 +77,7 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
       fields.attachments = reply?.attachments?.filter(part => part.cid || part.disposition === 'inline') || [];
     }
     if (reply && !draft && mode === 'replyAll') {
-      const own = new Set(identities.map(item => item.email.toLowerCase()));
+      const own = new Set([...identities.map(item => item.email.toLowerCase()), fields.fromEmail.toLowerCase()]);
       const recipients = [...(replyTargets(reply) || []), ...(reply.to || []), ...(reply.cc || [])];
       fields.to = formatAddresses(recipients.filter((address, index) => !own.has(address.email.toLowerCase()) && recipients.findIndex(item => item.email.toLowerCase() === address.email.toLowerCase()) === index));
     }
@@ -91,8 +91,11 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
     try {
       const entries = JSON.parse(localStorage.getItem(cacheKey) || '{}');
       const recovered = entries[recoveryId] as Recovery | undefined;
-      const backup = entries[`${recoveryId}:conflict-backup`]?.fields as Fields | undefined;
-      if (recovered?.fields && typeof recovered.fields.body === 'string' && Array.isArray(recovered.fields.attachments)){recoveredLocally.current = true;if(draft&&!recovered.pendingDraft&&!recovered.pendingSubmission&&!recovered.pendingDiscard&&(recovered.sourceEmailId!==draft.id || recovered.sourceBlobId!==draft.blobId))return {fields,emailId:draft.id,conflicted:true,conflictBackup:recovered.fields};return recoverNewDraftConflict({ ...recovered, conflictBackup: recovered.conflictBackup || backup }, draft?.id);}
+      const storedBackup = entries[`${recoveryId}:conflict-backup`]?.fields as Fields | undefined;
+      const normalizeBackup = (value: Fields): Fields => ({ ...value, fromEmail: value.fromEmail ?? identities.find(item => item.id === value.identityId)?.email ?? '' });
+      const backup = storedBackup && normalizeBackup(storedBackup);
+      if (recovered?.conflictBackup) recovered.conflictBackup = normalizeBackup(recovered.conflictBackup);
+      if (recovered?.fields && typeof recovered.fields.body === 'string' && Array.isArray(recovered.fields.attachments)){recovered.fields = { ...recovered.fields, fromEmail: recovered.fields.fromEmail ?? identities.find(item => item.id === recovered.fields.identityId)?.email ?? (draft ? fields.fromEmail : '') }; recoveredLocally.current = true;if(draft&&!recovered.pendingDraft&&!recovered.pendingSubmission&&!recovered.pendingDiscard&&(recovered.sourceEmailId!==draft.id || recovered.sourceBlobId!==draft.blobId))return {fields,emailId:draft.id,conflicted:true,conflictBackup:recovered.fields};return recoverNewDraftConflict({ ...recovered, conflictBackup: recovered.conflictBackup || backup }, draft?.id);}
       if (backup && typeof backup.body === 'string' && Array.isArray(backup.attachments)) return { fields, emailId: draft?.id, conflictBackup: backup };
     } catch { /* The server draft remains usable if local storage is unavailable. */ }
     return { fields, emailId: draft?.id };
@@ -109,6 +112,10 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
   const [templates, setTemplates] = useState<{ id: string; name: string; subject?: string; body?: string; text?: string; textBody?: string }[]>([]);
   const [signatures, setSignatures] = useState<Signature[]>([]);
   const [contacts, setContacts] = useState<{ name: string; email: string }[]>([]);
+  const [sendingDomains, setSendingDomains] = useState<string[]>([]);
+  const [resolvedIdentities, setResolvedIdentities] = useState<Identity[]>([]);
+  const availableIdentities = [...resolvedIdentities, ...identities.filter(identity => !resolvedIdentities.some(item => item.id === identity.id))];
+  const senderEdited = useRef(false);
   const richEditor = useRef<HTMLDivElement>(null);
   const inlinePreviews = useRef(new Map<string, string>());
   const latest = useRef(fields);
@@ -121,6 +128,8 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
   const [conflictBackup, setConflictBackup] = useState<Fields | undefined>(recovery.conflictBackup);
   const conflictBackupRef = useRef(recovery.conflictBackup);
   const pendingSubmission = useRef(recovery.pendingSubmission);
+  const pendingIdentity = useRef(recovery.pendingIdentity);
+  const [senderUncertain, setSenderUncertain] = useState(!!recovery.pendingIdentity);
   const pendingDiscard = useRef(recovery.pendingDiscard);
   const [discardUncertain, setDiscardUncertain] = useState(!!recovery.pendingDiscard);
   const [submissionUncertain, setSubmissionUncertain] = useState(!!recovery.pendingSubmission);
@@ -139,7 +148,7 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
       lastStoredRecoveryId.current = activeRecoveryId.current;
       if (conflictBackupRef.current) entries[`${activeRecoveryId.current}:conflict-backup`] = { fields: conflictBackupRef.current };
       if (clear) delete entries[activeRecoveryId.current];
-      else entries[activeRecoveryId.current] = {draftBaseline:draftBaseline.current,sourceBlobId:draftBaseline.current?.blobId,sourceEmailId:emailId.current, fields: latest.current, emailId: emailId.current, pendingDraft: pendingDraft.current, pendingSubmission: pendingSubmission.current, pendingDiscard: pendingDiscard.current, conflicted: conflicted.current, conflictBackup: conflictBackupRef.current, updatedAt: new Date().toISOString() };
+      else entries[activeRecoveryId.current] = {draftBaseline:draftBaseline.current,sourceBlobId:draftBaseline.current?.blobId,sourceEmailId:emailId.current, fields: latest.current, emailId: emailId.current, pendingDraft: pendingDraft.current, pendingSubmission: pendingSubmission.current, pendingIdentity: pendingIdentity.current, pendingDiscard: pendingDiscard.current, conflicted: conflicted.current, conflictBackup: conflictBackupRef.current, updatedAt: new Date().toISOString() };
       localStorage.setItem(cacheKey, JSON.stringify(entries));
       if (mounted.current) setLocalAvailable(true);
     } catch { if (mounted.current) setLocalAvailable(false); }
@@ -159,12 +168,13 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
       if (saved.current === fingerprint && emailId.current) return emailId.current;
       const draftMailbox = mailboxes.find(box => box.role === 'drafts');
       if (!draftMailbox) throw new Error('This account needs a Drafts mailbox before you can save or send.');
-      const identity = identities.find(item => item.id === snapshot.identityId);
+      const identity = availableIdentities.find(item => item.email.toLowerCase() === snapshot.fromEmail.trim().toLowerCase());
       if (mounted.current) setStatus('Saving draft…');
       const content = {
         mailboxIds: draftMetadata.current?.mailboxIds || { [draftMailbox.id]: true },
         keywords: { ...(draftMetadata.current?.keywords || {}), $draft: true },
-        from: identity ? [{ name: identity.name, email: identity.email }] : [],
+        from: validRecipient(snapshot.fromEmail.trim()) ? [{ ...(identity?.name ? { name: identity.name } : {}), email: snapshot.fromEmail.trim() }] : [],
+        draftFrom: snapshot.fromEmail,
         to: completeRecipients(snapshot.to), cc: completeRecipients(snapshot.cc), bcc: completeRecipients(snapshot.bcc),
         draftRecipients: {to:snapshot.to,cc:snapshot.cc,bcc:snapshot.bcc},
         subject: snapshot.subject, bodyValues: { text: { value: snapshot.body }, ...(snapshot.rich ? { html: { value: cleanEditorHtml(snapshot.html || textHtml(snapshot.body), true) } } : {}) },
@@ -213,7 +223,7 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
   useEffect(() => {
     if (submitted.current) return;
     storeRecovery();
-    if (busy || uploading || pendingSubmission.current || pendingDiscard.current || conflicted.current) return;
+    if (busy || uploading || pendingIdentity.current || pendingSubmission.current || pendingDiscard.current || conflicted.current) return;
     if (!emailId.current && !pendingDraft.current && JSON.stringify(fields) === JSON.stringify(serverInitialFields.current)) return;
     if(emailId.current&&!pendingDraft.current&&saved.current===JSON.stringify(fields))return;
     const timeout = window.setTimeout(() => { void save().catch(cause => { if (mounted.current) { setError(cause instanceof Error ? cause.message : 'Could not save draft.'); setStatus('Draft not saved to server'); } }); }, 1200);
@@ -236,7 +246,7 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
       if (!active) return;
       const library = result.settings?.signatures || [];
       setSignatures(library);
-      const selected = identities.find(identity => identity.id === latest.current.identityId);
+      const selected = availableIdentities.find(identity => identity.id === latest.current.identityId);
       const signature = library.find(item => item.id === selected?.signatureId);
       if (signature && !draft && !recoveredLocally.current && latest.current.html === serverInitialFields.current?.html) {
         const html = replaceComposeSignature(latest.current.html || textHtml(latest.current.body), signature.html || textHtml(signature.text));
@@ -245,6 +255,28 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
         setFields(next);
       }
     }).catch(() => { /* Saved identities retain their legacy signature when the library is unavailable. */ });
+    void client.call<GetResult<{ name: string; enabled?: boolean; sendingVerified?: boolean }>>('Domain/get', {}, accountId).then(result => {
+      if (!active) return;
+      const domains = result.list.filter(domain => domain.enabled !== false && domain.sendingVerified === true).map(domain => domain.name);
+      setSendingDomains(domains);
+      if (!draft && reply && mode !== 'forward' && !recoveredLocally.current && !senderEdited.current) {
+        const fromEmail = chooseSendingAddress(identities, undefined, reply, domains);
+        const identityId = identities.find(identity => identity.email.toLowerCase() === fromEmail.toLowerCase())?.id || '';
+        const own = new Set([...identities.map(identity => identity.email.toLowerCase()), fromEmail.toLowerCase()]);
+        const updateRecipients = mode === 'replyAll' && latest.current.to === serverInitialFields.current?.to;
+        const candidates = [...(replyTargets(reply) || []), ...(reply.to || []), ...(reply.cc || [])];
+        const to = updateRecipients ? formatAddresses(candidates.filter((address, index) => !own.has(address.email.toLowerCase()) && candidates.findIndex(item => item.email.toLowerCase() === address.email.toLowerCase()) === index)) : latest.current.to;
+        const next = { ...latest.current, fromEmail, identityId, to };
+        latest.current = next; setFields(next);
+        // Only refresh automatic defaults, retaining the original content baseline
+        // so edits made while domain suggestions load still trigger autosave.
+        if (serverInitialFields.current) serverInitialFields.current = { ...serverInitialFields.current, fromEmail, identityId, ...(updateRecipients ? { to } : {}) };
+      }
+    }).catch(() => { /* Existing addresses and server validation remain available if domain suggestions cannot load. */ });
+    void client.call<GetResult<Identity>>('Identity/get', {}, accountId).then(result => {
+      if (active) setResolvedIdentities(previous => [...result.list, ...previous.filter(identity => !result.list.some(item => item.id === identity.id))]);
+      // Suggestions may arrive after typing or recovery; the raw From stays put.
+    }).catch(() => { /* Cached suggestions remain usable; Send always validates the current address. */ });
     return () => { active = false; };
   }, [client, accountId]);
 
@@ -280,16 +312,35 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
     try { await action(); } catch (cause) { if (mounted.current) setError(cause instanceof Error ? cause.message : 'Mail request failed.'); }
     finally { if (mounted.current) setBusy(false); }
   };
+  const confirmSender = async (): Promise<Identity> => {
+    let identity: Identity;
+    try {
+      identity = await resolveComposeIdentity<Identity>(client, accountId, latest.current.fromEmail, operation => {
+        pendingIdentity.current = operation; storeRecovery();
+      }, pendingIdentity.current);
+    } catch (cause) {
+      if (isConfirmedRejection(cause) || !pendingIdentity.current) { setSenderUncertain(false); throw cause; }
+      setSenderUncertain(true);
+      throw new Error(`The sending address could not be confirmed. Your message has not been sent. Retry to confirm the same address. ${cause instanceof Error ? cause.message : ''}`);
+    }
+    setSenderUncertain(false);
+    setResolvedIdentities(previous => [...previous.filter(item => item.id !== identity.id), identity]);
+    latest.current = { ...latest.current, fromEmail: identity.email, identityId: identity.id };
+    setFields(latest.current); storeRecovery();
+    if (mounted.current) setStatus('Sending address confirmed; message not sent yet');
+    return identity;
+  };
   const send = () => run(async () => {
     if (submitted.current) throw new Error('This message has already been submitted.');
     const firstAttempt = !pendingSubmission.current;
     if (!pendingSubmission.current) {
-      if (!identities.some(identity => identity.id === latest.current.identityId)) throw new Error('Choose a sending identity before sending.');
+      if (!validRecipient(latest.current.fromEmail.trim())) throw new Error('Enter a complete sending email address.');
       const recipients = [...addresses(latest.current.to), ...addresses(latest.current.cc), ...addresses(latest.current.bcc)];
       if (!recipients.length || recipients.some(address => !validRecipient(address.email))) throw new Error('Enter valid recipient email addresses, separated by commas.');
       if (latest.current.sendAt && new Date(latest.current.sendAt).getTime() <= Date.now()) throw new Error('Choose a future date and time for scheduled sending.');
+      const identity = await confirmSender();
       const id = await save();
-      const args = { create: { compose: { emailId: id, identityId: latest.current.identityId, undoSeconds, ...(latest.current.sendAt ? { sendAt: new Date(latest.current.sendAt).toISOString() } : {}) } } };
+      const args = { create: { compose: { emailId: id, identityId: identity.id, undoSeconds, ...(latest.current.sendAt ? { sendAt: new Date(latest.current.sendAt).toISOString() } : {}) } } };
       const sendingState = await client.call<GetResult<unknown>>('EmailSubmission/get', { ids: [] }, accountId);
       if (!sendingState.state) throw new Error('Refresh your mail session before sending this message.');
       pendingSubmission.current = createComposeOperation(args, JSON.stringify([id, latest.current]), sendingState.state);
@@ -313,17 +364,18 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
     onSubmitted(submissionId, emailId.current);
   });
   const keepAsNewDraft = (source = latest.current) => run(async () => {
-    if (pendingDraft.current || pendingSubmission.current || pendingDiscard.current) throw new Error('Confirm the pending operation before creating a copy.');
+    if (pendingDraft.current || pendingIdentity.current || pendingSubmission.current || pendingDiscard.current) throw new Error('Confirm the pending operation before creating a copy.');
     // Refresh only for a new create, never to rebase an update onto someone else's edits.
     await client.call<GetResult<Email>>('Email/get', { ids: [] }, accountId);
     emailId.current = undefined; draftBaseline.current = undefined; draftMetadata.current = undefined; saved.current = '';
+    source = { ...source, fromEmail: source.fromEmail ?? availableIdentities.find(identity => identity.id === source.identityId)?.email ?? '' };
     latest.current = source; setFields(source);
     conflicted.current = false; setDraftConflict(false); setError(''); storeRecovery();
     await save();
   });
   const reloadServerDraft = () => run(async () => {
     if (!emailId.current) throw new Error('No saved server draft is available; keep your edits as a new draft.');
-    if (pendingDraft.current || pendingSubmission.current || pendingDiscard.current) throw new Error('Confirm the pending operation before reloading.');
+    if (pendingDraft.current || pendingIdentity.current || pendingSubmission.current || pendingDiscard.current) throw new Error('Confirm the pending operation before reloading.');
     conflictBackupRef.current = structuredClone(latest.current); setConflictBackup(conflictBackupRef.current); storeRecovery();
     const result = await client.call<GetResult<Email>>('Email/get', { ids: [emailId.current], fetchAllBodyValues: true }, accountId);
     const server = result.list[0];
@@ -331,7 +383,7 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
     if (!server.keywords?.$draft) throw new Error('This message is no longer an editable draft. Your local edits are preserved; keep them as a new draft.');
     const identity = chooseSendingIdentity(identities, server);
     const replacement: Fields = {
-      identityId: identity?.id || '', to: server.draftRecipients?.to ?? formatAddresses(server.to), cc: server.draftRecipients?.cc ?? formatAddresses(server.cc), bcc: server.draftRecipients?.bcc ?? formatAddresses(server.bcc),
+      identityId: identity?.id || '', fromEmail: chooseSendingAddress(identities, server), to: server.draftRecipients?.to ?? formatAddresses(server.to), cc: server.draftRecipients?.cc ?? formatAddresses(server.cc), bcc: server.draftRecipients?.bcc ?? formatAddresses(server.bcc),
       subject: server.subject, body: plainBody(server), attachments: server.attachments || [], sendAt: '', rich: !!server.htmlBody?.length,
       html: cleanEditorHtml(server.htmlBody?.map(part => server.bodyValues?.[part.partId || '']?.value || '').join('') || ''),
       replyThread: { inReplyTo: messageIds(server, 'inReplyTo', 'in-reply-to'), references: messageIds(server, 'references', 'references') },
@@ -354,12 +406,15 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Attachment upload failed.'); }
     finally { setUploading(false); }
   };
-  const switchIdentity = (id: string) => {
-    const identity = identities.find(item => item.id === id);
+  const switchSender = (fromEmail: string) => {
+    senderEdited.current = true;
+    const identity = availableIdentities.find(item => item.email.toLowerCase() === fromEmail.trim().toLowerCase());
     const signature = signatures.find(item => item.id === identity?.signatureId);
     setFields(current => {
-      const html = replaceComposeSignature(current.rich ? current.html || textHtml(current.body) : textHtml(current.body), signature?.html || identity?.htmlSignature || textHtml(signature?.text || identity?.textSignature || ''));
-      return { ...current, identityId: id, signatureId: signature?.id, body: composePlainText(html), html };
+      // Keep an explicitly chosen signature while typing a custom address.
+      if (!identity) return { ...current, fromEmail, identityId: '' };
+      const html = replaceComposeSignature(current.rich ? current.html || textHtml(current.body) : textHtml(current.body), signature?.html || identity.htmlSignature || textHtml(signature?.text || identity.textSignature || ''));
+      return { ...current, fromEmail, identityId: identity.id, signatureId: signature?.id, body: composePlainText(html), html };
     });
   };
 
@@ -378,10 +433,10 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
   const [discardConfirm, setDiscardConfirm] = useState(false);
   const [replyMode, setReplyMode] = useState<'reply' | 'replyAll' | 'forward' | 'attachment'>(mode);
   const fileInput = useRef<HTMLInputElement>(null), imageInput = useRef<HTMLInputElement>(null);
-  const locked = busy || submissionUncertain || discardUncertain;
-  const selectedIdentity = identities.find(identity => identity.id === fields.identityId);
+  const locked = busy || senderUncertain || submissionUncertain || discardUncertain;
+  const selectedIdentity = availableIdentities.find(identity => identity.email.toLowerCase() === fields.fromEmail.trim().toLowerCase());
   const sendingNeedsSetup = selectedIdentity?.verified === false;
-  const canSend = submissionUncertain || Boolean(selectedIdentity && !sendingNeedsSetup && addresses(fields.to + ',' + fields.cc + ',' + fields.bcc).length);
+  const canSend = senderUncertain || submissionUncertain || Boolean(validRecipient(fields.fromEmail.trim()) && !sendingNeedsSetup && addresses(fields.to + ',' + fields.cc + ',' + fields.bcc).length);
   const closeSaved = () => void run(async () => { await save(); storeRecovery(true); onClose(); });
   const preserveAndClose = () => { storeRecovery(); onClose(); };
   const discard = () => void run(async () => {
@@ -430,7 +485,7 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
     setFields(previous => {
       const template = document.createElement('template'); template.innerHTML = previous.html || textHtml(previous.body);
       template.content.querySelectorAll('[data-mail-quote]').forEach(element => element.remove());
-      const own = new Set(identities.map(identity => identity.email.toLowerCase()));
+      const own = new Set([...availableIdentities.map(identity => identity.email.toLowerCase()), previous.fromEmail.trim().toLowerCase()]);
       const candidates = next === 'replyAll' ? [...(replyTargets(reply) || []), ...(reply.to || []), ...(reply.cc || [])] : replyTargets(reply) || [];
       const to = next === 'forward' || next === 'attachment' ? '' : formatAddresses(candidates.filter((address, index) => (next !== 'replyAll' || !own.has(address.email.toLowerCase())) && candidates.findIndex(item => item.email.toLowerCase() === address.email.toLowerCase()) === index));
       const quote = next === 'attachment' ? '' : quoteMessage(reply, next === 'forward' ? 'forward' : 'reply', plainBody(reply)).html;
@@ -457,15 +512,16 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
       </header>
       <div className="mail-compose-scroll">
       {draftConflict && <section className="mail-compose-notice mail-compose-conflict" role="alert"><h3>This draft needs your attention</h3><p>Another version was saved. Your edits are safe here; autosave is paused.</p><div className="mail-compose-notice-actions"><Button type="button" disabled={busy || uploading} onClick={() => void keepAsNewDraft()}>Keep my version as a new draft</Button>{emailId.current && <Button variant="outline" type="button" disabled={busy || uploading} onClick={() => void reloadServerDraft()}>Use saved version</Button>}<Button variant="ghost" type="button" disabled={busy || uploading || !localAvailable} onClick={preserveAndClose}>Keep on this device & close</Button></div>{emailId.current && <small>Using the saved version keeps a recovery copy of your current edits.</small>}</section>}
+      {senderUncertain && !submissionUncertain && <section className="mail-compose-notice" role="alert"><h3>Confirm this sending address</h3><p>Your message has not been sent. Retry to confirm the same address before sending.</p>{error && <p>{error}</p>}<Button variant="outline" size="sm" type="button" disabled={busy || uploading} onClick={() => void run(async () => { await confirmSender(); })}>Check sending address</Button><Button variant="outline" size="sm" type="button" disabled={busy || uploading || !localAvailable} onClick={preserveAndClose}>Keep on this device & close</Button></section>}
       {submissionUncertain && <section className="mail-compose-notice" role="alert"><h3>Confirm whether this message was sent</h3><p>The server hasn’t confirmed the result. Confirming retries the same request and won’t send a second copy.</p>{error && <p>{error}</p>}<Button variant="outline" size="sm" type="button" disabled={busy || uploading || !localAvailable} onClick={preserveAndClose}>Keep on this device & close</Button></section>}
       {discardUncertain && <section className="mail-compose-notice" role="alert"><h3>Confirm whether this draft was discarded</h3><p>Your local copy is preserved until the server confirms the result. Checking again retries the same request.</p>{error && <p>{error}</p>}<div className="mail-compose-notice-actions"><Button size="sm" disabled={busy} onClick={discard}>Confirm discard</Button><Button variant="outline" size="sm" disabled={busy || !localAvailable} onClick={preserveAndClose}>Keep on this device & close</Button></div></section>}
-      {error && !draftConflict && !submissionUncertain && !discardUncertain && <section className="mail-compose-notice mail-compose-error" role="alert"><h3>Couldn’t complete this action</h3><p>{error}</p>{localAvailable && <Button variant="ghost" size="sm" type="button" disabled={busy || uploading} onClick={preserveAndClose}>Keep on this device & close</Button>}</section>}
-      {!identities.length && <section className="mail-compose-notice"><h3>Add a sending address</h3><p>Open Settings → Email addresses to connect the address you’ll send from. You can write and save a draft now.</p></section>}
+      {error && !draftConflict && !senderUncertain && !submissionUncertain && !discardUncertain && <section className="mail-compose-notice mail-compose-error" role="alert"><h3>Couldn’t complete this action</h3><p>{error}</p>{localAvailable && <Button variant="ghost" size="sm" type="button" disabled={busy || uploading} onClick={preserveAndClose}>Keep on this device & close</Button>}</section>}
+      {!identities.length && !sendingDomains.length && <section className="mail-compose-notice"><h3>Add a sending address</h3><p>Open Settings → Email addresses to connect the address you’ll send from. You can write and save a draft now.</p></section>}
       {sendingNeedsSetup && <section className="mail-compose-notice"><h3>This address isn’t ready to send yet</h3><p>Finish domain setup for {selectedIdentity?.email.split('@')[1]} to verify sending. Your draft is preserved.</p>{onSetupDomain && <Button variant="outline" size="sm" disabled={locked || uploading} onClick={() => { storeRecovery(); setMinimized(true); onSetupDomain(); }}>Finish domain setup</Button>}</section>}
       {discardConfirm && !discardUncertain && <div className="mail-compose-discard" role="alert"><div><strong>Discard this draft?</strong><p>The saved draft and this device’s recovery copy will be removed.</p></div><Button variant="outline" size="sm" disabled={busy} onClick={() => setDiscardConfirm(false)}>Keep writing</Button><Button variant="destructive" size="sm" disabled={busy} onClick={discard}>Discard draft</Button></div>}
       <div className="mail-compose-paper">
         <div className="mail-compose-envelope">
-          <div className="mail-envelope-row"><Label htmlFor="mail-compose-from">From</Label><NativeSelect size="sm" id="mail-compose-from" aria-label="From" value={fields.identityId} disabled={locked} onChange={event => switchIdentity(event.target.value)}><option value="">Choose a sending address</option>{identities.map(identity => <option key={identity.id} value={identity.id}>{identity.name ? identity.name + ' · ' : ''}{identity.email}</option>)}</NativeSelect></div>
+          <div className="mail-envelope-row"><Label htmlFor="mail-compose-from">From</Label><SenderInput id="mail-compose-from" value={fields.fromEmail} disabled={locked} identities={availableIdentities} domains={sendingDomains} onChange={switchSender} /></div>
           
           <div className="mail-envelope-row"><Label htmlFor="mail-compose-to">To</Label><div className="mail-envelope-recipient"><RecipientInput id="mail-compose-to" label="To" value={fields.to} disabled={locked} contacts={[...contacts,...suggestedContacts,...identities]} onChange={value=>change('to',value)} /><Button variant="ghost" size="sm" type="button" disabled={locked} aria-expanded={showCopies || Boolean(fields.cc || fields.bcc)} onClick={() => setShowCopies(value => !value)}>Cc / Bcc</Button></div></div>
           {(showCopies || fields.cc || fields.bcc) && (['cc', 'bcc'] as const).map(key => <div className="mail-envelope-row" key={key}><Label htmlFor={'mail-compose-' + key}>{key === 'cc' ? 'Cc' : 'Bcc'}</Label><RecipientInput id={'mail-compose-'+key} label={key==='cc'?'Cc':'Bcc'} value={fields[key]} disabled={locked} contacts={[...contacts,...suggestedContacts,...identities]} onChange={value=>change(key,value)} /></div>)}
@@ -500,7 +556,7 @@ export default function Compose({ client, accountId, undoSeconds=10, mailboxes, 
       </div>
         <footer className="mail-compose-footer">
           <span className="mail-compose-feedback" role="status">{uploading ? 'Uploading attachment…' : !localAvailable ? 'Device recovery unavailable' : fields.sendAt ? 'Scheduled for ' + new Date(fields.sendAt).toLocaleString() : ''}</span>
-          <Button type="button" disabled={busy || uploading || draftConflict || discardUncertain || !canSend} onClick={() => void send()}><Send size={16} />{uploading ? 'Uploading…' : busy ? 'Working…' : submissionUncertain ? 'Confirm send' : fields.sendAt ? 'Schedule send' : 'Send'}</Button>
+          <Button type="button" disabled={busy || uploading || draftConflict || discardUncertain || !canSend} onClick={() => void send()}><Send size={16} />{uploading ? 'Uploading…' : busy ? 'Working…' : senderUncertain ? 'Confirm sending address' : submissionUncertain ? 'Confirm send' : fields.sendAt ? 'Schedule send' : 'Send'}</Button>
           <span className="sr-only" aria-live="polite">{status}</span>
         </footer>
     </div>

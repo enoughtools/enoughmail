@@ -37,9 +37,10 @@ export function recoverNewDraftConflict<T extends {
   draftBaseline?: DraftBaseline;
   pendingDraft?: PendingComposeOperation;
   pendingSubmission?: PendingComposeOperation;
+  pendingIdentity?: PendingComposeOperation;
   pendingDiscard?: PendingComposeOperation;
 }>(recovery: T, serverDraftId?: string): T {
-  if (!recovery.conflicted || serverDraftId || recovery.emailId || recovery.sourceEmailId || recovery.sourceBlobId || recovery.draftBaseline || recovery.pendingDraft || recovery.pendingSubmission || recovery.pendingDiscard) return recovery;
+  if (!recovery.conflicted || serverDraftId || recovery.emailId || recovery.sourceEmailId || recovery.sourceBlobId || recovery.draftBaseline || recovery.pendingDraft || recovery.pendingSubmission || recovery.pendingIdentity || recovery.pendingDiscard) return recovery;
   // No server message or uncertain command exists to overwrite or replay. Keep
   // the local content and backups intact; the next save is an independent create.
   return { ...recovery, conflicted: false };
@@ -116,22 +117,59 @@ export async function saveComposeDraft<T>(
 }
 
 interface SendingIdentity { id: string; email: string; }
-interface ReplyRecipients { to: { email: string }[]|null; cc?: { email: string }[]|null; headers?: { name: string; value: string }[]; }
-/** Only select an identity present in the account's authorized identity list. */
-export function chooseSendingIdentity<T extends SendingIdentity>(identities: T[], draft?: { from: { email: string }[]|null }, reply?: ReplyRecipients): T | undefined {
-  const unique = (addresses: string[]) => identities.filter(identity => addresses.includes(identity.email.toLowerCase()));
-  if (draft) {
-    const matches = unique((draft.from||[]).map(address => address.email.toLowerCase()));
-    return matches.length === 1 ? matches[0] : undefined;
+/** Resolve only on Send. A lost response must replay the same reserved address. */
+export async function resolveComposeIdentity<T extends SendingIdentity>(
+  client: DraftOperationClient, accountId: string, email: string,
+  persist: (operation: PendingComposeOperation | undefined) => void,
+  pending?: PendingComposeOperation,
+): Promise<T> {
+  const create = async () => {
+    const observed = await client.call<{ state: string }>('Identity/get', { ids: [] }, accountId);
+    if (!observed.state) throw new Error('Refresh your mail session before choosing a sending address.');
+    return createComposeOperation({ email: email.trim() }, email.trim().toLowerCase(), observed.state);
+  };
+  let operation = pending || await create();
+  for (let attempt = 0; attempt < 2; attempt++) {
+    persist(operation);
+    try {
+      const result = await client.call<{ identity: T }>('Identity/resolve', operation.args, accountId);
+      if (!result.identity?.id || result.identity.email.toLowerCase() !== email.trim().toLowerCase()) throw new Error('The server did not confirm the selected sending address.');
+      persist(undefined);
+      return result.identity;
+    } catch (cause) {
+      if (!isConfirmedRejection(cause)) throw cause;
+      persist(undefined);
+      if (attempt || !isConfirmedDraftConflict(cause)) throw cause;
+      operation = await create();
+    }
   }
+  throw new Error('The sending address could not be confirmed.');
+}
+interface ReplyRecipients { to: { email: string }[]|null; cc?: { email: string }[]|null; deliveryRecipient?: string; headers?: { name: string; value: string }[]; }
+interface DraftSender { from: { email: string }[]|null; draftFrom?: string; }
+/**
+ * Draft choices win over reply defaults. The ingress recipient is server-owned;
+ * Delivered-To and similar MIME headers can be supplied by an outside sender.
+ * Legacy messages fall back only to one recognizable local To/Cc address.
+ * Selecting an address here does not authorize sending or reserve an identity.
+ */
+export function chooseSendingAddress(identities: SendingIdentity[], draft?: DraftSender, reply?: ReplyRecipients, domains: string[] = []): string {
+  if (draft) return draft.draftFrom ?? (draft.from?.length === 1 ? draft.from[0].email : '');
+  if (reply?.deliveryRecipient) return reply.deliveryRecipient;
   if (reply) {
-    const delivered = (reply.headers || []).filter(header => ['delivered-to', 'x-original-to'].includes(header.name.toLowerCase())).flatMap(header => header.value.match(/[^\s<>;,]+@[^\s<>;,]+/g) || []).map(value => value.toLowerCase());
-    const envelopeMatches = unique(delivered);
-    if (envelopeMatches.length) return envelopeMatches.length === 1 ? envelopeMatches[0] : undefined;
-    const recipientMatches = unique([...(reply.to||[]), ...(reply.cc || [])].map(address => address.email.toLowerCase()));
-    return recipientMatches.length === 1 ? recipientMatches[0] : undefined;
+    const own = new Set(identities.map(identity => identity.email.toLowerCase()));
+    const supported = new Set(domains.map(domain => domain.toLowerCase()));
+    const matches = [...new Set([...(reply.to || []), ...(reply.cc || [])].map(address => address.email.toLowerCase()))]
+      .filter(email => own.has(email) || supported.has(email.split('@')[1]));
+    return matches.length === 1 ? matches[0] : '';
   }
-  return identities.length === 1 ? identities[0] : undefined;
+  return identities.length === 1 ? identities[0].email : '';
+}
+/** Only return a saved identity when it matches the chosen address exactly. */
+export function chooseSendingIdentity<T extends SendingIdentity>(identities: T[], draft?: DraftSender, reply?: ReplyRecipients): T | undefined {
+  const address = chooseSendingAddress(identities, draft, reply).trim().toLowerCase();
+  const matches = identities.filter(identity => identity.email.toLowerCase() === address);
+  return matches.length === 1 ? matches[0] : undefined;
 }
 /** Revisions replace immutable Email objects, fenced and committed as one command. */
 export function draftReplacementArgs(content: Record<string, unknown>, previousEmailId?: string): Record<string, unknown> {

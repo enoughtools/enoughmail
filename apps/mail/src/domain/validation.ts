@@ -3,7 +3,7 @@ import { validateDraftRecipients } from './recipients';
 const forbiddenSegments = new Set(['__proto__', 'prototype', 'constructor']);
 const roots: Record<string, Set<string>> = Object.fromEntries(Object.entries({
   Mailbox: ['color', 'name', 'parentId', 'sortOrder', 'isSubscribed', 'role'],
-  Email: ['draftRecipients', 'mailboxIds', 'keywords', 'from', 'to', 'cc', 'bcc', 'replyTo', 'subject', 'sentAt', 'textBody', 'htmlBody', 'bodyValues', 'attachments', 'inReplyTo', 'references', 'text', 'html'],
+  Email: ['draftFrom', 'draftRecipients', 'mailboxIds', 'keywords', 'from', 'to', 'cc', 'bcc', 'replyTo', 'subject', 'sentAt', 'textBody', 'htmlBody', 'bodyValues', 'attachments', 'inReplyTo', 'references', 'text', 'html'],
   Identity: ['name', 'email', 'replyTo', 'bcc', 'textSignature', 'htmlSignature', 'signatureId'],
   EmailSubmission: ['envelope','emailId', 'identityId', 'undoSeconds', 'sendAt', 'undoStatus'],
   Rule: ['name', 'enabled', 'condition', 'actions', 'stop', 'sortOrder'],
@@ -37,6 +37,7 @@ export function validateWritable(type: string, input: unknown, mode: 'create' | 
     if (type === 'Mailbox' && root === 'color' && (parts.length !== 1 || (value !== null && (typeof value !== 'string' || !/^#[a-f0-9]{6}$/i.test(value))))) throw new Error('Use a six-digit hex label color');
     if (type === 'Mailbox' && root === 'role' && (mode !== 'create' || value !== null)) throw new Error('Mailbox roles are server owned');
     if(type==='Email'&&root==='draftRecipients'){if(parts.length!==1)throw new Error('Replace draft recipients as a whole');validateDraftRecipients(value);}
+    if(type==='Email'&&root==='draftFrom'&&(parts.length!==1||typeof value!=='string'||value.length>10000||/[\r\n\0]/.test(value)))throw new Error('Invalid draft sending address');
     if (type === 'Email' && root === 'attachments' && parts.length > 1) throw new Error('Replace attachment references as a whole');
     if (type === 'EmailSubmission' && mode === 'create' && root === 'undoStatus') throw new Error('Submission status is server owned');
     if (type === 'EmailSubmission' && mode === 'update' && (path !== 'undoStatus' || value !== 'canceled')) throw new Error('Only pending submissions can be canceled');

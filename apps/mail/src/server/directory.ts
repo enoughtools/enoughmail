@@ -93,7 +93,8 @@ export class MailDirectory {
         return Response.json({ verified: true });
       });
     }
-    if (path === '/register-address') {
+    if (path === '/register-address' || path === '/claim-sending-address') {
+      const claimSending = path === '/claim-sending-address';
       if (typeof body.address !== 'string' || typeof body.enabled !== 'boolean') return Response.json({ error: 'invalid_address' }, { status: 400 });
       const address = body.address.trim().toLowerCase();
       const catchAll = body.catchAll === true;
@@ -102,6 +103,10 @@ export class MailDirectory {
       return this.ctx.storage.transaction(async storage => {
         const verified = await storage.get<VerifiedDomain>('domain:' + domain);
         if (!verified || verified.organizationId !== account.organizationId || verified.workspaceId !== account.workspaceId) return Response.json({ error: 'domain_not_verified' }, { status: 403 });
+        if (claimSending) {
+          const approval = await storage.get<{ zoneId: string; organizationId: string; workspaceId: string; accountIds: string[] }>('approved-zone:' + domain);
+          if (catchAll || body.enabled !== true || !approval || approval.zoneId !== body.zoneId || approval.organizationId !== account.organizationId || approval.workspaceId !== account.workspaceId || !approval.accountIds.includes(account.accountId)) return Response.json({ error: 'domain_not_authorized' }, { status: 403 });
+        }
         const key = (catchAll ? 'catchall:' : 'address:') + address;
         if (!catchAll) {
           const reservationKey = await storage.get<string>('identity-transfer-reservation:' + address);
@@ -113,8 +118,13 @@ export class MailDirectory {
             } else if (reservation && ['preparing', 'committed'].includes(reservation.status)) return Response.json({ error: 'identity_transfer_in_progress' }, { status: 409 });
           }
         }
+        if (!catchAll) {
+          const owner = await storage.get<DirectoryAccount>('identity-transfer-owner:' + address);
+          if (owner && (owner.accountId !== account.accountId || owner.organizationId !== account.organizationId || owner.workspaceId !== account.workspaceId)) return Response.json({ error: 'address_in_use' }, { status: 409 });
+        }
         const previous = await storage.get<DirectoryRoute>(key);
-        if (previous && previous.accountId !== account.accountId) return Response.json({ error: 'address_in_use' }, { status: 409 });
+        if (previous && (previous.accountId !== account.accountId || previous.organizationId !== account.organizationId || previous.workspaceId !== account.workspaceId)) return Response.json({ error: 'address_in_use' }, { status: 409 });
+        if (claimSending && previous?.enabled === false) return Response.json({ error: 'address_disabled' }, { status: 409 });
         const route: DirectoryRoute = { ...account, address, enabled: body.enabled as boolean, catchAll };
         await storage.put(key, route);
         return Response.json({ route });

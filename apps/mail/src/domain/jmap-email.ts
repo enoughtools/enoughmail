@@ -3,7 +3,7 @@ import { parseAddresses, parseMime } from './mime';
 interface Header { name: string; value: string }
 interface BodyValue { value: string; isEncodingProblem?: boolean; isTruncated?: boolean }
 const nullableProperties = ['sender', 'from', 'to', 'cc', 'bcc', 'replyTo', 'subject', 'sentAt', 'messageId', 'inReplyTo', 'references'];
-const defaultProperties = ['id', 'blobId', 'threadId', 'mailboxIds', 'keywords', 'size', 'receivedAt', 'messageId', 'inReplyTo', 'references', 'sender', 'from', 'to', 'cc', 'bcc', 'replyTo', 'subject', 'sentAt', 'hasAttachment', 'preview', 'bodyValues', 'textBody', 'htmlBody', 'attachments', 'draftRecipients'];
+const defaultProperties = ['id', 'blobId', 'threadId', 'mailboxIds', 'keywords', 'size', 'receivedAt', 'messageId', 'inReplyTo', 'references', 'sender', 'from', 'to', 'cc', 'bcc', 'replyTo', 'subject', 'sentAt', 'hasAttachment', 'preview', 'bodyValues', 'textBody', 'htmlBody', 'attachments', 'draftRecipients', 'draftFrom', 'deliveryRecipient'];
 const definedHeaders = new Set('date from sender reply-to to cc bcc message-id in-reply-to references subject comments keywords resent-date resent-from resent-sender resent-to resent-cc resent-bcc resent-message-id return-path received list-help list-unsubscribe list-subscribe list-post list-owner list-archive'.split(' '));
 const addressHeaders = new Set('from sender reply-to to cc bcc resent-from resent-sender resent-reply-to resent-to resent-cc resent-bcc'.split(' '));
 function textHeader(raw: string): string { return parseMime(new TextEncoder().encode(`Subject: ${raw}\r\n\r\n`), 'projection').subject.replace(/[\x00-\x1f\x7f]/g, '').normalize('NFC'); }
@@ -112,7 +112,7 @@ export function projectEmail(email: Record<string, any>, args: Record<string, an
   for (const property of args.properties ?? defaultProperties) {
     if (property.startsWith('header:')) output[property] = headerValue(source.headers, property);
     else if (property in source) output[property] = source[property];
-    else if (['snooze', 'followUp', 'quarantine', 'draftRecipients'].includes(property)) continue;
+    else if (['snooze', 'followUp', 'quarantine', 'draftRecipients', 'draftFrom', 'deliveryRecipient'].includes(property)) continue;
     else throw new Error(`Unknown Email property: ${property}`);
   }
   return output;

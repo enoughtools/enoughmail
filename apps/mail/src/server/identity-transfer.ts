@@ -37,8 +37,22 @@ export async function directoryIdentityTransfer(storage: DirectoryStorage, accou
   try {
     if (body.action === 'owner') {
       if (typeof body.address !== 'string') throw new IdentityTransferError('invalid_address', 'Invalid address.', 400);
-      const owner = await storage.get<DirectoryAccount>(ownerKey(body.address.trim().toLowerCase()));
-      return json({ owner: owner && sameScope(owner, account) ? owner.accountId : owner ? 'outside-workspace' : null });
+      const address = body.address.trim().toLowerCase();
+      return storage.transaction(async transaction => {
+        const reservation = await transaction.get<string>(reservationKey(address));
+        if (reservation) {
+          const transfer = await transaction.get<IdentityTransferRecord>(reservation);
+          if (transfer?.status === 'preparing' && transfer.expiresAt <= Date.now()) { await transaction.put(reservation, { ...transfer, status: 'aborted' }); await transaction.delete(reservationKey(address)); }
+          else if (transfer && ['preparing', 'committed'].includes(transfer.status)) return json({ owner: 'transfer-in-progress', enabled: false });
+        }
+        const route = await transaction.get<DirectoryAccount & { enabled: boolean }>('address:' + address);
+        const transferred = await transaction.get<DirectoryAccount>(ownerKey(address));
+        // Ordinary address claims and disabled tombstones are authoritative too.
+        // A stale transferred owner can never grant access to another inbox's route.
+        const foreign = [route, transferred].find(owner => owner && (!sameScope(owner, account) || owner.accountId !== account.accountId));
+        const owner = foreign || route || transferred;
+        return json({ owner: owner && sameScope(owner, account) ? owner.accountId : owner ? 'outside-workspace' : null, ...(route ? { enabled: route.enabled } : {}) });
+      });
     }
     const command = validateIdentityTransfer(body.command);
     return await storage.transaction(async transaction => {

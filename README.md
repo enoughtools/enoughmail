@@ -35,6 +35,7 @@ Already receiving mail on your domain? Follow the [domain adoption guide](docs/d
 
 - Multiple inboxes, labels, search, rules, contacts, templates and delegated access.
 - Threaded reading, HTML mail with remote image controls, attachments and rich-text replies.
+- Catch-all replies from the address that received the message, plus custom sending addresses on verified domains. [Sending addresses and ownership](docs/sending-identities.md).
 - Draft recovery, submission receipts and explicit handling of uncertain send outcomes.
 - JMAP state updates and opt-in encrypted Web Push notifications, including with the tab closed. Device subscriptions need periodic renewal.
 - Cloudflare Email Routing and Sending integration, domain verification and a private attachment scanner.

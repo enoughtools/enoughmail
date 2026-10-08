@@ -12,7 +12,7 @@ export interface AuthorizedJmapOptions {
   sessionState(): string | Promise<string>;
   transferEmail?(input: { source: MailContext; destination: MailContext; args: Record<string, any>; request: JmapRequest }): Promise<JmapResponse>;
 }
-const mutation = (name: string) => /\/(set|import|apply|verify|requestVerification|copy|start|cancel|renew|recover|prepare|route|setup)$/.test(name);
+const mutation = (name: string) => /\/(set|import|apply|verify|requestVerification|copy|start|cancel|renew|recover|prepare|route|setup|resolve)$/.test(name);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 class MethodError extends Error { constructor(readonly type: string, message: string) { super(message); } }
 function fail(type: string, message: string): never { throw new MethodError(type, message); }
@@ -93,7 +93,7 @@ export async function executeAuthorizedJmap(options: AuthorizedJmapOptions): Pro
         for (const [, result] of response.methodResponses) for (const [key, entry] of Object.entries(result.created ?? {}) as Array<[string, any]>) if (typeof entry?.id === 'string') createdIds[key] = entry.id;
         continue;
       }
-      const required = name === 'EmailSubmission/recover' ? 'mail.draft' : !mutation(name) ? (['EmailSubmission', 'Identity'].includes(name.split('/')[0]) ? 'mail.send' : 'mail.read') : name.startsWith('EmailSubmission/') ? 'mail.send' : name.startsWith('Email/') ? 'mail.draft' : name.startsWith('Export/') ? 'mail.read' : ['Snooze', 'FollowUp', 'Mailbox', 'Rule'].includes(name.split('/')[0]) ? 'mail.organize' : 'mail.manage';
+      const required = name === 'Identity/resolve' ? 'mail.send' : name === 'EmailSubmission/recover' ? 'mail.draft' : !mutation(name) ? (['EmailSubmission', 'Identity'].includes(name.split('/')[0]) ? 'mail.send' : 'mail.read') : name.startsWith('EmailSubmission/') ? 'mail.send' : name.startsWith('Email/') ? 'mail.draft' : name.startsWith('Export/') ? 'mail.read' : ['Snooze', 'FollowUp', 'Mailbox', 'Rule'].includes(name.split('/')[0]) ? 'mail.organize' : 'mail.manage';
       const destination = await authorize(args.accountId, name === 'EmailSubmission/recover' ? ['mail.read','mail.draft'] : [required]);
       const allows = (context: MailContext, action: string) => context.actor.actions.includes(action) || action !== 'mail.send' && context.actor.actions.includes('mail.edit');
       if (!allows(destination, required) && !(!mutation(name) && ['Identity','EmailSubmission'].includes(name.split('/')[0]) && allows(destination, 'mail.read')) && !(name === 'Email/set' && allows(destination, 'mail.organize'))) fail('forbidden', 'Account permission does not allow this method');

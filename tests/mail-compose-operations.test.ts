@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { discardComposeDraft, chooseSendingIdentity, draftReplacementArgs, createComposeOperation, isConfirmedDraftConflict, isConfirmedRejection, isConfirmedSubmissionRejection, recoverNewDraftConflict, saveComposeDraft } from '../apps/mail/src/ui/compose-operations';
+import { discardComposeDraft, chooseSendingIdentity, chooseSendingAddress, resolveComposeIdentity, draftReplacementArgs, createComposeOperation, isConfirmedDraftConflict, isConfirmedRejection, isConfirmedSubmissionRejection, recoverNewDraftConflict, saveComposeDraft } from '../apps/mail/src/ui/compose-operations';
 import { MailClient, type MailSession } from '../apps/mail/src/ui/jmap';
 const session: MailSession = { username: 'actor', actorId: 'actor', organizationId: 'org', workspaceId: 'workspace', apiUrl: '/apps/mail/jmap/api', uploadUrl: '/upload/{accountId}', downloadUrl: '/blob/{blobId}', capabilities: {}, primaryAccounts: {}, accounts: {} };
 
@@ -47,7 +47,7 @@ describe('Compose mutation recovery', () => {
 
   it('replies from the authorized delivered alias rather than the first identity', () => {
     const identities = [{ id: 'first', email: 'main@example.com' }, { id: 'alias', email: 'alias@example.com' }];
-    expect(chooseSendingIdentity(identities, undefined, { to: [{ email: 'main@example.com' }], headers: [{ name: 'Delivered-To', value: '<ALIAS@example.com>' }] })?.id).toBe('alias');
+    expect(chooseSendingIdentity(identities, undefined, { to: [{ email: 'main@example.com' }], deliveryRecipient: 'ALIAS@example.com', headers: [{ name: 'Delivered-To', value: '<main@example.com>' }] })?.id).toBe('alias');
     expect(chooseSendingIdentity(identities, undefined, { to: [], cc: [{ email: 'alias@example.com' }] })?.id).toBe('alias');
     expect(chooseSendingIdentity(identities, undefined, { to: [{ email: 'alias@example.com' }] })?.id).toBe('alias');
   });
@@ -256,7 +256,7 @@ it('handles RFC nullable recipients on saved drafts and replies without an ident
  expect(chooseSendingIdentity([], {from:null})).toBeUndefined();
  expect(chooseSendingIdentity([],undefined,{to:null,cc:null})).toBeUndefined();
  expect(chooseSendingIdentity([{id:'a',email:'a@example.com'}],{from:null})).toBeUndefined();
- expect(chooseSendingIdentity([{id:'a',email:'a@example.com'}],undefined,{to:null,cc:null,headers:[{name:'Delivered-To',value:'a@example.com'}]})).toEqual({id:'a',email:'a@example.com'});
+ expect(chooseSendingIdentity([{id:'a',email:'a@example.com'}],undefined,{to:null,cc:null,headers:[{name:'Delivered-To',value:'a@example.com'}]})).toBeUndefined();
 });
 
 it('only clears a non-dispatched submission on its first attempt, preserving uncertain replays', () => {
@@ -264,4 +264,50 @@ it('only clears a non-dispatched submission on its first attempt, preserving unc
   expect(isConfirmedSubmissionRejection(failure, true)).toBe(true);
   expect(isConfirmedSubmissionRejection(failure, false)).toBe(false);
   expect(isConfirmedSubmissionRejection(new TypeError('Lost response'), true)).toBe(false);
+});
+
+
+describe('Catch-all sender selection and recovery', () => {
+  const identities = [{ id: 'main', email: 'main@example.test' }];
+  it('keeps the exact trusted recipient even before a catch-all identity exists', () => {
+    const reply = { to: [{ email: 'main@example.test' }], deliveryRecipient: 'orders@example.test' };
+    expect(chooseSendingAddress(identities, undefined, reply)).toBe('orders@example.test');
+    expect(chooseSendingIdentity(identities, undefined, reply)).toBeUndefined();
+  });
+  it('ignores forged delivery headers and requires an unambiguous historical local recipient', () => {
+    expect(chooseSendingAddress(identities, undefined, { to: null, headers: [{ name: 'X-Original-To', value: 'forged@example.test' }] }, ['example.test'])).toBe('');
+    expect(chooseSendingAddress(identities, undefined, { to: [{ email: 'orders@example.test' }, { email: 'external@elsewhere.test' }] }, ['example.test'])).toBe('orders@example.test');
+    expect(chooseSendingAddress(identities, undefined, { to: [{ email: 'orders@example.test' }], cc: [{ email: 'team@example.test' }] }, ['example.test'])).toBe('');
+  });
+  it('keeps raw saved sender text and never substitutes the reply recipient for a draft', () => {
+    const reply = { to: null, deliveryRecipient: 'orders@example.test' };
+    expect(chooseSendingAddress(identities, { from: [{ email: 'saved@example.test' }] }, reply)).toBe('saved@example.test');
+    expect(chooseSendingAddress(identities, { from: null, draftFrom: 'unfinished@' }, reply)).toBe('unfinished@');
+    expect(chooseSendingAddress(identities, { from: [{ email: 'saved@example.test' }], draftFrom: '' }, reply)).toBe('');
+  });
+  it('replays the same sender reservation after a lost result without issuing another create', async () => {
+    let pending: ReturnType<typeof createComposeOperation> | undefined;
+    const original = vi.fn(async (method: string) => {
+      if (method === 'Identity/get') return { state: 'identity-state' };
+      throw new TypeError('Connection lost after reservation');
+    });
+    await expect(resolveComposeIdentity({ call: original } as any, 'account', 'orders@example.test', operation => { pending = operation; })).rejects.toThrow('Connection lost');
+    const recovered = JSON.parse(JSON.stringify(pending));
+    const replay = vi.fn(async () => ({ identity: { id: 'reserved', email: 'orders@example.test' } }));
+    expect(await resolveComposeIdentity({ call: replay } as any, 'account', 'orders@example.test', operation => { pending = operation; }, recovered)).toEqual({ id: 'reserved', email: 'orders@example.test' });
+    expect(replay).toHaveBeenCalledExactlyOnceWith('Identity/resolve', recovered.args, 'account');
+    expect(pending).toBeUndefined();
+  });
+  it('rechecks the revision after one confirmed race but preserves ownership rejections', async () => {
+    let reads = 0, attempts = 0;
+    const call = vi.fn(async (method: string) => {
+      if (method === 'Identity/get') return { state: 'state-' + ++reads };
+      if (++attempts === 1) throw Object.assign(new Error('stateMismatch'), { confirmed: true, errorType: 'stateMismatch' });
+      throw Object.assign(new Error('This address belongs to another inbox.'), { confirmed: true, errorType: 'forbidden' });
+    });
+    let pending: unknown;
+    await expect(resolveComposeIdentity({ call } as any, 'account', 'reserved@example.test', operation => { pending = operation; })).rejects.toThrow('another inbox');
+    expect(call.mock.calls.map(([method]) => method)).toEqual(['Identity/get', 'Identity/resolve', 'Identity/get', 'Identity/resolve']);
+    expect(pending).toBeUndefined();
+  });
 });

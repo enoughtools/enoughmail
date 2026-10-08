@@ -66,6 +66,10 @@ export interface Email {
         value: string;
     }[];
     draftRecipients?: {to?:string;cc?:string;bcc?:string};
+    /** Raw, possibly incomplete From value retained only on editable drafts. */
+    draftFrom?: string;
+    /** Recipient recorded by the trusted receiving transport, never a MIME header. */
+    deliveryRecipient?: string;
     snoozedUntil?: string | null;
 }
 export interface Identity {
@@ -76,6 +80,12 @@ export interface Identity {
     textSignature?: string;
     htmlSignature?: string;
     signatureId?: string | null;
+}
+export interface IdentityResolveResult {
+    accountId: string;
+    oldState: string;
+    newState: string;
+    identity: Identity;
 }
 export interface GetResult<T> {
     accountId: string;
@@ -151,7 +161,7 @@ export class MailClient {
     }
     async call<T>(name: string, args: Record<string, unknown>, accountId?: string): Promise<T> {
         const using = Object.keys(this.session.capabilities);
-        const mutation = /\/(set|apply|verify|plan|prepare|route|setup)$/.test(name);
+        const mutation = /\/(set|apply|verify|plan|prepare|route|setup|resolve)$/.test(name);
         const entity = name.split('/')[0];
         const state = this.states.get(`${accountId}:${entity}`);
         const payload = { ...args, ...(mutation && !('operationId' in args) ? { operationId: crypto.randomUUID() } : {}), ...(accountId ? { accountId } : {}), ...(mutation && state && !('ifInState' in args) ? { ifInState: state } : {}) };
