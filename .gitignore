@@ -14,3 +14,6 @@ coverage/
 dist-standalone/
 
 apps/*/src/utilities.generated.css
+
+__pycache__/
+*.py[cod]
