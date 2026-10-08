@@ -1,15 +1,18 @@
 /* Product layout only. EnoughUI supplies control appearance and interaction states. */
-.mail-app .mail-sidebar{width:216px;flex:0 0 216px;display:flex;flex-direction:column;gap:18px;padding:24px 16px;border-right:1px solid var(--color-hairline);overflow:auto;background:var(--color-paper)}
+.mail-app .mail-sidebar{grid-column:1;grid-row:1 / -1;min-height:0;width:216px;flex:0 0 216px;display:flex;flex-direction:column;gap:18px;padding:16px;border-right:1px solid var(--color-hairline);overflow:auto;background:var(--color-paper)}
 .mail-sidebar-brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .mail-app .mail-mobile-menu-toggle{display:none}
 .mail-sidebar nav{display:grid;gap:4px}
-.mail-sidebar nav [data-slot=button],.mail-sidebar-bottom [data-slot=button],.mail-more-folders-trigger{justify-content:flex-start;width:100%}
+.mail-sidebar nav [data-slot=button],.mail-more-folders-trigger{justify-content:flex-start;width:100%}
 .mail-sidebar nav [data-slot=button]>small{margin-left:auto}
-.mail-sidebar-bottom{margin-top:auto;display:grid;gap:12px}
-.mail-app .mail-search{display:flex;align-items:center;gap:8px;padding:20px 24px 14px;flex-shrink:0}
+.mail-app .mail-search{grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px;padding:12px 24px;min-width:0;border-bottom:1px solid var(--color-hairline);background:var(--color-paper)}
+.mail-search-tools,.mail-header-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.mail-header-actions{padding-left:8px;margin-left:4px;border-left:1px solid var(--color-hairline)}
+.mail-search form>[data-slot=input],.mail-search-submit[data-slot=button]{height:36px}
+.mail-search-submit[data-slot=button]{padding-inline:12px}
 .mail-search form{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .mail-search form>input{flex:1;min-width:0}
-.mail-inbox-scope{display:flex;align-items:center;gap:16px;padding:0 24px 16px;flex-shrink:0}
+.mail-inbox-scope{display:flex;align-items:center;gap:16px;padding:16px 24px;flex-shrink:0}
 .mail-inbox-scope label{display:flex;align-items:center;gap:8px;min-width:0;font-size:12px;color:var(--color-text-3)}
 .mail-inbox-scope [data-slot=select-trigger]{max-width:260px;min-width:130px}
 .mail-scope-view{margin-left:auto;font-size:12px;white-space:nowrap;color:var(--color-text-3)}
@@ -112,24 +115,25 @@
 .mail-snooze-custom{display:grid;gap:12px;padding-top:16px;border-top:1px solid var(--color-hairline)}
 .mail-snooze-custom label{display:grid;gap:8px;font-size:12px}
 .mail-snooze-custom [role=alert]{font-size:12px;color:var(--color-warn)}
-@media(max-width:1150px){.mail-app .mail-sidebar{width:190px;flex-basis:190px;padding:20px 12px}.mail-row-open{grid-template-columns:minmax(155px,35%) minmax(0,1fr) auto;gap:10px}.mail-row{padding-left:16px;padding-right:16px}.has-reader .mail-list{display:none}.mail-reader{border-left:0}}
+@media(max-width:1150px){.mail-app{grid-template-columns:190px minmax(0,1fr)}.mail-app .mail-sidebar{width:190px;flex-basis:190px;padding:16px 12px}.mail-row-open{grid-template-columns:minmax(155px,35%) minmax(0,1fr) auto;gap:10px}.mail-row{padding-left:16px;padding-right:16px}.has-reader .mail-list{display:none}.mail-reader{border-left:0}}
 @media(max-width:650px){
- .mail-app{flex-direction:column}
- .mail-app .mail-sidebar{width:100%;flex:0 0 auto;flex-direction:row;align-items:center;flex-wrap:wrap;padding:12px 14px;gap:10px;border-right:0;border-bottom:1px solid var(--color-hairline);overflow:visible}
+ .mail-app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr)}
+ .mail-app .mail-sidebar{grid-column:1;grid-row:1;width:100%;flex:0 0 auto;flex-direction:row;align-items:center;flex-wrap:wrap;padding:12px 14px;gap:10px;border-right:0;border-bottom:1px solid var(--color-hairline);overflow:visible}
  .mail-sidebar-brand{display:flex;align-items:center;gap:12px;flex:1;margin:0;min-width:0}
  .mail-app .mail-mobile-menu-toggle{display:inline-flex}
  .mail-sidebar>.mail-compose-button{flex-shrink:0}
  .mail-sidebar>:not(.mail-sidebar-brand):not(.mail-compose-button){display:none}
  .mail-sidebar.mobile-nav-open>:not(.mail-sidebar-brand):not(.mail-compose-button){display:grid}
  .mail-sidebar.mobile-nav-open>nav{flex-basis:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
- .mail-sidebar.mobile-nav-open .mail-sidebar-bottom{display:flex;flex:1;min-width:0;margin-top:0}
  .mail-sidebar.mobile-nav-open>.mail-more-folders-trigger{display:inline-flex;width:auto}
- .mail-app .mail-search{padding:12px 14px;gap:4px;flex-wrap:wrap}
- .mail-search form{flex:1 1 calc(100% - 120px);gap:4px}
+ .mail-app .mail-search{grid-column:1;grid-row:2;padding:10px 14px;gap:6px;flex-wrap:wrap}
+ .mail-search-tools{gap:2px}
+ .mail-header-actions{margin-left:auto;padding-left:8px;gap:2px}
+ .mail-search form{flex:1 1 100%;gap:4px}
  .mail-search form>input{width:100%}
  .mail-search-submit{width:41px;padding-inline:0;flex-shrink:0}
  .mail-search-submit>span{display:none}
- .mail-inbox-scope{padding:0 14px 12px;gap:8px;flex-wrap:wrap}
+ .mail-inbox-scope{padding:12px 14px;gap:8px;flex-wrap:wrap}
  .mail-inbox-scope label{flex:1;min-width:0;font-size:11px;gap:4px}
  .mail-inbox-scope [data-slot=select-trigger]{min-width:0;max-width:100%;width:100%}
  .mail-scope-view{font-size:11px}

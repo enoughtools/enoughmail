@@ -19,6 +19,6 @@ export {
   TableHeader,
   TableRow,
 } from "@rebnz/enough-ui/table";
-export { AppFrame, type AppFrameProps } from "./app-frame";
+export { AppFrame, AppControls, type AppFrameProps, type AppControlsProps } from "./app-frame";
 export { ModuleScaffold, type ModuleScaffoldProps } from "./module-scaffold";
 export { useModuleContext, type ModuleContext } from "./use-module-context";

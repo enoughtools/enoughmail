@@ -1,7 +1,7 @@
 import {useMailConfirm} from './use-mail-confirm';
 import { MailViewCache } from './view-cache';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useModuleContext } from '@open-cloud/ui';
+import { AppControls, useModuleContext } from '@open-cloud/ui';
 import { Button } from '@rebnz/enough-ui/button';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@rebnz/enough-ui/collapsible';
 import { Checkbox } from '@rebnz/enough-ui/checkbox';
@@ -12,7 +12,7 @@ import { Popover, PopoverTrigger, PopoverContent, PopoverHeader, PopoverTitle } 
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@rebnz/enough-ui/select';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@rebnz/enough-ui/tooltip';
 import { toast } from '@rebnz/enough-ui/sonner';
-import { Archive, Inbox, FilePenLine, Send, Star, Mail, MailOpen, Clock, Tag, Trash2, CircleAlert, MoreHorizontal, Search, RefreshCw, Settings2, ChevronDown, ChevronLeft, Plus, X, Reply, ReplyAll, Forward, Bell, Keyboard, Folder, LogOut, Menu, ArrowDownWideNarrow, ShieldAlert, Paperclip, Download, FileCode2, Link2 } from 'lucide-react';
+import { Archive, Inbox, FilePenLine, Send, Star, Mail, MailOpen, Clock, Tag, Trash2, CircleAlert, MoreHorizontal, Search, RefreshCw, Settings as SettingsIcon, Settings2, ChevronDown, ChevronLeft, Plus, X, Reply, ReplyAll, Forward, Bell, Keyboard, Folder, LogOut, Menu, ArrowDownWideNarrow, ShieldAlert, Paperclip, Download, FileCode2, Link2 } from 'lucide-react';
 import { Item } from '@rebnz/enough-ui/item';
 import { Input } from '@rebnz/enough-ui/input';
 import { Spinner } from '@rebnz/enough-ui/spinner';
@@ -76,6 +76,7 @@ function MailIconAction({ label, icon: Icon, onClick, disabled = false, pressed 
 }
 const folderIcons: Record<string, typeof Mail> = { inbox: Inbox, drafts: FilePenLine, sent: Send, starred: Star, unread: Mail, important: CircleAlert, snoozed: Clock, all: Mail, archive: Archive, junk: ShieldAlert, trash: Trash2 };
 export default function MailApp() {
+    const standalone = import.meta.env.MODE === 'standalone';
  const {confirm,dialog:confirmationDialog}=useMailConfirm();
     const context = useModuleContext('mail');
     const client = useMemo(() => new MailClient(), []);
@@ -382,8 +383,8 @@ export default function MailApp() {
         deliveryStatus?: unknown;
     }>>('EmailSubmission/get', {}, currentAccount); setNotice(result.list.length ? result.list.map(v => `${v.id}: ${v.undoStatus || 'queued'} ${v.sendAt || ''}`).join('\n') : 'No outgoing submissions.'); }); };
     if (!session || !accountIds.length) return <MailFrame currentApp={{ id: 'mail', name: 'Mail' }} user={context.user} apps={context.apps} layout="workspace">
-      <main className="mail-start" id="main">{confirmationDialog}
-        <div className="mail-start-identity"><span>{context.user?.displayName}</span><a href="/cdn-cgi/access/logout">Sign out</a></div>
+      <div className="mail-start" id={standalone ? 'main' : undefined} role={standalone ? 'main' : undefined} tabIndex={-1}>{confirmationDialog}
+        <div className="mail-start-identity"><AppControls currentApp={{id:'mail',name:'Mail'}} user={context.user} apps={context.apps} showApps={!standalone} accountDescription={null} accountMenuItems={<DropdownMenuItem asChild><a href="/cdn-cgi/access/logout"><LogOut />Sign out</a></DropdownMenuItem>} /></div>
         <section className="mail-start-card" aria-labelledby="mail-start-title">
           <div className="mail-wordmark"><MailBrand /></div>
           <h2 id="mail-start-title">{loading ? 'Opening your mail…' : session ? 'Your mail starts here.' : 'We couldn’t open your mail.'}</h2>
@@ -399,9 +400,9 @@ export default function MailApp() {
               <Button size="sm" type="submit" disabled={creatingAccount || !accountName.trim()}>{creatingAccount ? 'Creating mailbox…' : 'Create mailbox'}</Button>
             </form><p className="mail-start-note">You can add more mailboxes and domains later.</p></> : !loading && <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>Try again</Button>}
         </section>
-      </main>
+      </div>
     </MailFrame>;
-    return <MailFrame currentApp={{ id: 'mail', name: 'Mail' }} user={context.user} apps={context.apps} layout="workspace"><div className="mail-app" role={import.meta.env.MODE === 'standalone' ? 'main' : undefined} tabIndex={-1} data-density={preferences[currentAccount]?.density||'comfortable'} id="main">{confirmationDialog}
+    return <MailFrame currentApp={{ id: 'mail', name: 'Mail' }} user={context.user} apps={context.apps} layout="workspace"><div className="mail-app" role={standalone ? 'main' : undefined} tabIndex={-1} data-density={preferences[currentAccount]?.density||'comfortable'} id={standalone ? 'main' : undefined}>{confirmationDialog}
  <aside className={`mail-sidebar ${mobileNavOpen ? 'mobile-nav-open' : ''}`}>
    <div className="mail-sidebar-brand"><a className="mail-wordmark" href="/apps/mail/" onClick={event=>{if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();navigate('inbox');}}><MailBrand /></a><Button className="mail-mobile-menu-toggle" variant="ghost" size="icon-sm" aria-label="Mail navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(value => !value)}><Menu /></Button></div>
    <Button size="sm" className="mail-compose-button" onClick={() => { openComposer(); }}><FilePenLine /> Compose</Button>
@@ -410,16 +411,20 @@ export default function MailApp() {
    <Collapsible open={moreFoldersOpen} onOpenChange={setMoreFoldersOpen} className="mail-more-folders"><CollapsibleTrigger asChild><Button variant="ghost" size="sm" className="mail-more-folders-trigger"><Folder />{moreFoldersOpen ? 'Fewer folders' : 'More folders'}<ChevronDown /></Button></CollapsibleTrigger><CollapsibleContent><nav aria-label="More mail folders">{['starred','unread','important','snoozed','all','archive','junk','trash'].map(role => { const Icon=folderIcons[role];return <Button key={role} variant={!panelOpen&&view===role?'secondary':'ghost'} size="sm" aria-current={!panelOpen&&view===role?'page':undefined} onClick={()=>navigate(role)}><Icon /><span>{folderNames[role]}</span></Button>;})}{currentBoxes.filter(box=>!box.role&&!['folder-snoozed','folder-quarantine'].includes(box.id)).map(box=><Button key={box.id} variant={!panelOpen&&view===box.id?'secondary':'ghost'} size="sm" aria-current={!panelOpen&&view===box.id?'page':undefined} onClick={()=>navigate(box.id)}><Tag />{box.name}</Button>)}{currentBoxes.some(box=>box.id==='folder-quarantine')&&<Button variant="ghost" size="sm" onClick={()=>navigate('folder-quarantine')}><ShieldAlert />Quarantine</Button>}<Button variant="ghost" size="sm" onClick={()=>addLabel()}><Plus />Create label</Button></nav></CollapsibleContent></Collapsible>
    {favoriteIds.length > 0 && <nav aria-label="Favorite folders">{currentBoxes.filter(box => favoriteIds.includes(box.id)).map(box => <Button key={box.id} variant={view === box.id && !panelOpen ? 'secondary' : 'ghost'} size="sm" onClick={() => navigate(box.id)}><Tag />{box.name}</Button>)}</nav>}
    {splits.length > 0 && <nav aria-label="Saved searches">{splits.map((split,index) => <Button key={index} variant="ghost" size="sm" onClick={() => {closePanels();setQuery(split.query);setSearch(split.query);setActive(null);}}><Search />{split.name}</Button>)}</nav>}
-   <div className="mail-sidebar-bottom"><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm" aria-label="Settings and tools"><Settings2 /><span>Settings</span><ChevronDown /></Button></DropdownMenuTrigger><DropdownMenuContent className="mail-menu" align="start" side="top"><DropdownMenuLabel>{context.user?.displayName || 'Your account'}</DropdownMenuLabel><DropdownMenuItem onSelect={() => openSettings('Preferences')}><Settings2 />Mail settings</DropdownMenuItem><DropdownMenuItem onSelect={() => openSettings('Domains')}><Inbox />Inboxes & domains</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => {closePanels();setOutbox(true);}}><Send />Outbox & delivery</DropdownMenuItem><DropdownMenuItem onSelect={() => {closePanels();setOfflineQueue(true);}}><RefreshCw />Offline changes</DropdownMenuItem><DropdownMenuItem onSelect={() => {closePanels();setRecoveryPicker(true);}}><FilePenLine />Recover drafts</DropdownMenuItem><DropdownMenuItem onSelect={() => {closePanels();setPalette(true);}}><Keyboard />Keyboard shortcuts</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem asChild><a href="/cdn-cgi/access/logout"><LogOut />Sign out</a></DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>
  </aside>
- {!panelOpen && <section className={`mail-content ${active ? 'mail-content-reading' : ''}`} aria-label="Mailbox">
- <NotificationRenewalPrompt client={client} onRenew={()=>openSettings('Notifications')} />
    <header className="mail-search">
-     <form role="search" onSubmit={event => {event.preventDefault();setSearch(query);setActive(null);}}><Input ref={searchInput} aria-label="Search mail" placeholder="Search mail" value={query} onChange={event => setQuery(event.target.value)} />{query && <MailIconAction label="Clear search" icon={X} onClick={() => {setQuery('');setSearch('');setActive(null);searchInput.current?.focus();}} />}<Button type="submit" className="mail-search-submit" aria-label="Search"><Search /><span>Search</span></Button></form>
-     <SearchFilters mailboxes={currentBoxes} identities={knownAddresses} onSearch={value => {setQuery(value);setSearch(value);setActive(null);}} />
+     <form role="search" onSubmit={event => {event.preventDefault();closePanels();setSearch(query);setActive(null);}}><Input ref={searchInput} aria-label="Search mail" placeholder="Search mail" value={query} onChange={event => setQuery(event.target.value)} />{query && <MailIconAction label="Clear search" icon={X} onClick={() => {closePanels();setQuery('');setSearch('');setActive(null);searchInput.current?.focus();}} />}<Button type="submit" size="sm" className="mail-search-submit" aria-label="Search"><Search /><span>Search</span></Button></form>
+     <div className="mail-search-tools" aria-label="Mailbox tools"><SearchFilters mailboxes={currentBoxes} identities={knownAddresses} onSearch={value => {closePanels();setQuery(value);setSearch(value);setActive(null);}} />
      <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label="Sort messages"><ArrowDownWideNarrow /></Button></DropdownMenuTrigger></TooltipTrigger><TooltipContent>Sort messages</TooltipContent></Tooltip><DropdownMenuContent className="mail-menu" align="end"><DropdownMenuLabel>Sort messages</DropdownMenuLabel><DropdownMenuRadioGroup value={sort} onValueChange={setSort}>{[['receivedAt','Date'],['from','Sender'],['subject','Subject'],['to','Recipient'],['size','Size'],['unread','Read status'],['starred','Starred']].map(([value,label]) => <DropdownMenuRadioItem key={value} value={value}>{label}</DropdownMenuRadioItem>)}</DropdownMenuRadioGroup><DropdownMenuSeparator /><DropdownMenuCheckboxItem checked={ascending} onCheckedChange={value => setAscending(value === true)}>Ascending</DropdownMenuCheckboxItem>{currentBoxes.some(box => box.id === view || box.role === view) && <DropdownMenuItem onSelect={() => void pinFolder()}>{favoriteIds.includes(currentBoxes.find(box => box.id === view || box.role === view)!.id) ? 'Unpin from sidebar' : 'Pin to sidebar'}</DropdownMenuItem>}</DropdownMenuContent></DropdownMenu>
      <MailIconAction label={loading ? 'Refreshing mail' : 'Refresh mail'} icon={RefreshCw} disabled={loading} onClick={() => void load()} />
+     </div>
+     <div className="mail-header-actions">
+       <DropdownMenu><Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild><Button variant="ghost" size="icon-sm" aria-label="Settings and tools"><SettingsIcon /></Button></DropdownMenuTrigger></TooltipTrigger><TooltipContent>Settings and tools</TooltipContent></Tooltip><DropdownMenuContent className="mail-menu" align="end"><DropdownMenuLabel>Mail settings & tools</DropdownMenuLabel><DropdownMenuItem onSelect={() => openSettings('Preferences')}><Settings2 />Mail settings</DropdownMenuItem><DropdownMenuItem onSelect={() => openSettings('Domains')}><Inbox />Inboxes & domains</DropdownMenuItem><DropdownMenuSeparator /><DropdownMenuItem onSelect={() => {closePanels();setOutbox(true);}}><Send />Outbox & delivery</DropdownMenuItem><DropdownMenuItem onSelect={() => {closePanels();setOfflineQueue(true);}}><RefreshCw />Offline changes</DropdownMenuItem><DropdownMenuItem onSelect={() => {closePanels();setRecoveryPicker(true);}}><FilePenLine />Recover drafts</DropdownMenuItem><DropdownMenuItem onSelect={() => {closePanels();setPalette(true);}}><Keyboard />Keyboard shortcuts</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+       <AppControls currentApp={{id:'mail',name:'Mail'}} user={context.user} apps={context.apps} showApps={!standalone} accountDescription={null} accountMenuItems={<DropdownMenuItem asChild><a href="/cdn-cgi/access/logout"><LogOut />Sign out</a></DropdownMenuItem>} />
+     </div>
    </header>
+ {!panelOpen && <section className={`mail-content ${active ? 'mail-content-reading' : ''}`} aria-label="Mailbox">
+ <NotificationRenewalPrompt client={client} onRenew={()=>openSettings('Notifications')} />
    <div className="mail-inbox-scope">
      <label>Inbox<Select value={account || 'all'} onValueChange={value => {closePanels();setAccount(value === 'all' ? '' : value);setAddressScope('');setPageSizeOverride(null);setActive(null);setSelected(new Set());}}><SelectTrigger size="sm" aria-label="Choose inbox"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All inboxes</SelectItem>{accountIds.map(id => <SelectItem key={id} value={id}>{session.accounts[id].name}</SelectItem>)}</SelectContent></Select></label>
      {knownAddresses.length > 0 && <label>Address<Select value={addressScope || 'all'} onValueChange={value => {setAddressScope(value === 'all' ? '' : value);setActive(null);setSelected(new Set());}}><SelectTrigger size="sm" aria-label="Filter by email address"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All addresses</SelectItem>{knownAddresses.map(address => <SelectItem key={address} value={address}>{address}</SelectItem>)}</SelectContent></Select></label>}

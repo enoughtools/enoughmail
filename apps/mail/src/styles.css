@@ -2,15 +2,15 @@
 
 /* Shared page layout only. EnoughUI owns controls and interaction states. */
 .mail-standalone { height:100dvh; }
-.mail-app { display:flex; height:100%; min-height:0; overflow:hidden; color:var(--color-text-main); background:var(--color-paper); font-family:var(--font-sans); }
+.mail-app { display:grid; grid-template-columns:216px minmax(0,1fr); grid-template-rows:auto minmax(0,1fr); height:100%; min-height:0; overflow:hidden; color:var(--color-text-main); background:var(--color-paper); font-family:var(--font-sans); }
 .oc-main > .mail-app { height:100%; }
 .mail-app *, .mail-app *::before, .mail-app *::after { box-sizing:border-box; }
-.mail-content { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; }
+.mail-content { grid-column:2; grid-row:2; display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; }
 .mail-wordmark { display:inline-flex; align-items:center; gap:9px; color:var(--color-text-main); font-family:var(--font-sans); font-size:23px; line-height:1; letter-spacing:-.7px; white-space:nowrap; text-decoration:none; }
 .mail-wordmark img { display:block; flex-shrink:0; }
 .mail-wordmark strong { font-weight:600; }
 .mail-brand-descriptor { margin-left:5px; font-weight:400; }
-.mail-app > :is(.mail-settings,.mail-compose,.mail-overlay) { flex:1; min-width:0; min-height:0; height:100%; overflow:auto; }
+.mail-app > :is(.mail-settings,.mail-compose,.mail-overlay,.mail-command-page,.mail-recovery-page,.mail-shortcuts-page) { grid-column:2; grid-row:2; flex:1; min-width:0; min-height:0; height:100%; overflow:auto; }
 .mail-overlay { padding:28px; }
 .mail-dialog { max-width:760px; margin:auto; }
 .mail-dialog h2 { margin:0 0 24px; font-size:26px; }
@@ -40,6 +40,8 @@
 .mail-link-address { display:block; overflow-wrap:anywhere; }
 .mail-client-access :is(code,pre) { white-space:pre-wrap; overflow-wrap:anywhere; }
 @media(max-width:650px) {
+ .mail-app { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto minmax(0,1fr); }
+ .mail-content,.mail-app > :is(.mail-settings,.mail-compose,.mail-overlay,.mail-command-page,.mail-recovery-page,.mail-shortcuts-page) { grid-column:1; grid-row:3; }
  .mail-wordmark { font-size:21px; }
  .mail-start { padding:20px; }
  .mail-start-card { margin:6vh auto; }
