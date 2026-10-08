@@ -1,0 +1,75 @@
+/* Enough / Enough Tools identity. Source: EnoughUI src/styles/styles.css.
+   Import after EnoughUI. This file supplies tokens without a global reset. */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../fonts/SpaceGrotesk-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Libre Caslon Text";
+  src: url("../fonts/LibreCaslonText-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+:root {
+  --color-ink: #12151c;
+  --color-ink-2: #1c202b;
+  --color-ink-border: #2a3040;
+  --color-paper: #f4f5f8;
+  --color-card: #fafbfc;
+  --color-surface: #ffffff;
+  --color-hairline: #dde1e8;
+  --color-hairline-soft: #eef0f4;
+  --color-border-mid: #c6ccd6;
+  --color-text-main: #12151c;
+  --color-text-2: #3d4553;
+  --color-text-3: #626b7a;
+  --color-text-4: #5e6778;
+  --color-line-soft: #8a93a2;
+  --color-dark-text: #fafbfc;
+  --color-dark-text-2: #d5dae2;
+  --color-dark-text-3: #9aa3b2;
+  --color-accent: #3b4fe4;
+  --color-accent-soft: #eef0fb;
+  --color-accent-on-ink: #7d89f0;
+  --color-ok: #1a7f37;
+  --color-ok-on-ink: #6fbf87;
+  --color-warn: #8a6508;
+  --color-hover: color-mix(in srgb, var(--color-ink) 5%, var(--color-surface));
+  --color-hover-strong: color-mix(in srgb, var(--color-accent) 11%, var(--color-surface));
+  --color-active: color-mix(in srgb, var(--color-accent) 17%, var(--color-surface));
+  --font-serif: "Libre Caslon Text", Georgia, serif;
+  --font-sans: "Space Grotesk", "Helvetica Neue", sans-serif;
+  --font-mono: var(--font-sans);
+  --shadow-card: 0 2px 16px rgba(18, 21, 28, 0.08);
+  --shadow-pop: 5px 5px 0 var(--color-accent);
+  --shadow-palette: 8px 8px 0 rgba(59, 79, 228, 0.9);
+  --enough-brand-radius: 0;
+  --enough-brand-space-unit: 4px;
+  --enough-brand-space-1: 4px;
+  --enough-brand-space-2: 8px;
+  --enough-brand-space-3: 12px;
+  --enough-brand-space-4: 16px;
+  --enough-brand-space-6: 24px;
+  --enough-brand-space-8: 32px;
+  --enough-brand-space-12: 48px;
+  --enough-brand-space-16: 64px;
+  --enough-brand-wordmark-weight: 650;
+  --enough-brand-descriptor-weight: 400;
+  --enough-brand-display-weight: 400;
+  --enough-brand-mark-min: 24px;
+  --enough-brand-lockup-min: 32px;
+  --enough-brand-h1: 44px;
+  --enough-brand-h2: 34px;
+  --enough-brand-h3: 21px;
+  --enough-brand-body: 15px;
+  --enough-brand-lead: 19px;
+  --enough-brand-small: 13px;
+}
+.enough-brand { font-family: var(--font-sans); color: var(--color-ink); }
+.enough-brand :where(button, input, textarea, select, kbd, code, pre, samp) { font-family: var(--font-sans); }
+.enough-brand :where(h1, h2, h3) { font-family: var(--font-serif); font-weight: 400; }
+.enough-brand :where(button, input, textarea, select) { border-radius: var(--enough-brand-radius); }

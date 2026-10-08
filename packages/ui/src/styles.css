@@ -1,0 +1,115 @@
+@import "@rebnz/enough-ui/styles.css";
+@import "./brand.css";
+
+:root {
+  --font-sans: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Libre Caslon Text", Georgia, serif;
+  --font-mono: var(--font-sans);
+}
+
+body { margin: 0; min-width: 320px; }
+a { text-underline-offset: 4px; }
+.oc-app-frame { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.oc-top-nav { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 20px; height: 60px; flex-shrink: 0; padding: 0 20px; border-bottom: 1px solid var(--color-hairline); background: var(--color-surface); }
+.oc-skip-link { position: fixed; top: 8px; left: 8px; z-index: 100; transform: translateY(-150%); padding: 9px 14px; background: var(--color-surface); border: 2px solid var(--color-accent); font-size: 13px; color: var(--color-text-main); }
+.oc-skip-link:focus { transform: translateY(0); }
+.oc-home-link { display: inline-flex; align-items: center; flex-shrink: 0; }
+.oc-home-link:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 5px; }
+.oc-brand-logo { display: block; height: 32px; width: auto; max-width: 100%; }
+.oc-header-content { flex: 1; min-width: 0; }
+.oc-current-app { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-text-2); font-size: 14px; }
+.oc-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.oc-header-button[data-slot="button"] { width: 36px; height: 36px; min-width: 36px; padding: 7px; border: 1px solid transparent; color: var(--color-text-2); }
+.oc-header-button > svg { width: 20px; height: 20px; flex-shrink: 0; }
+.oc-account-button[data-slot="button"] { background: var(--color-accent-soft); border-color: var(--color-hairline); color: var(--color-accent); font-size: 12px; font-weight: 600; border-radius: 50%; }
+.oc-shell-menu { width: 264px; max-width: calc(100vw - 16px); max-height: min(calc(100dvh - 24px), var(--radix-dropdown-menu-content-available-height, calc(100dvh - 24px))); overflow-y: auto; overscroll-behavior: contain; border-width: 1px; }
+.oc-shell-menu [role="menuitem"] { gap: 10px; font-size: 13px; padding-top: 8px; padding-bottom: 8px; }
+.oc-shell-menu [aria-current="page"] { background: var(--color-accent-soft); color: var(--color-accent); }
+.oc-app-menu-icon { display: inline-flex; align-items: center; justify-content: center; width: 25px; height: 25px; flex-shrink: 0; border: 1px solid var(--color-hairline); background: var(--color-paper); color: var(--color-text-2); font-size: 12px; font-weight: 600; }
+.oc-menu-note { margin: 0; padding: 7px 16px 11px; color: var(--color-text-3); font-size: 12px; line-height: 1.5; }
+.oc-account-details { display: flex; flex-direction: column; gap: 4px; padding-top: 12px; padding-bottom: 12px; letter-spacing: normal; text-transform: none; }
+.oc-account-details strong { color: var(--color-text-main); font-size: 14px; font-weight: 600; }
+.oc-account-details > span { overflow-wrap: anywhere; font-size: 12px; }
+.oc-account-provider { margin-top: 4px; color: var(--color-text-3); }
+.oc-frame-body { display: flex; flex: 1; min-width: 0; }
+.oc-main { width: min(100%, 1248px); min-width: 0; margin: 0 auto; padding: 28px 24px 40px; flex: 1; }
+.oc-layout-page .oc-main { max-width: 1248px; }
+.oc-layout-workspace { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; }
+.oc-layout-workspace .oc-frame-body { min-height: 0; }
+.oc-layout-workspace .oc-main { width: auto; max-width: none; min-height: 0; margin: 0; padding: 0; }
+.oc-sidebar { width: 200px; flex: 0 0 200px; min-height: 0; overflow-y: auto; padding: 16px 12px; border-right: 1px solid var(--color-hairline); background: var(--color-paper); }
+.oc-page-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 32px; }
+.oc-eyebrow { margin: 0 0 14px; color: var(--color-text-3); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.oc-title { margin: 0 0 16px; font-family: var(--font-serif); font-size: clamp(34px, 5vw, 52px); font-weight: 400; line-height: 1.1; letter-spacing: -.02em; }
+.oc-lead { margin: 0; max-width: 680px; font-size: 17px; line-height: 1.6; color: var(--color-text-2); }
+.oc-scaffold-badge { margin-top: 32px; background: var(--color-accent-soft); border-color: var(--color-accent); color: var(--color-accent); flex-shrink: 0; }
+.oc-module-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 34px; border: 1px solid var(--color-border-mid); background: var(--color-surface); }
+.oc-module-facts > div { display: flex; flex-direction: column; gap: 7px; padding: 18px 22px; border-right: 1px solid var(--color-hairline); }
+.oc-module-facts > div:last-child { border-right: 0; }
+.oc-module-facts strong { font-size: 13px; font-weight: 500; }
+.oc-fact-label { color: var(--color-text-3); font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.oc-module-layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(270px, 1fr); gap: 36px; align-items: start; }
+.oc-preview-card { overflow: hidden; }
+.oc-preview-header { flex-direction: row; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-hairline); margin-bottom: 24px; }
+.oc-preview-header > div { display: flex; flex-direction: column; gap: 8px; }
+.oc-preview-header h3 { font-size: 17px; font-weight: 500; }
+.oc-preview-header p { font-size: 12px; line-height: 1.5; }
+.oc-preview-footer { margin: 0; padding: 13px 24px; border-top: 1px solid var(--color-hairline); color: var(--color-text-3); font-size: 11px; line-height: 1.6; background: var(--color-paper); }
+.oc-module-sidebar { padding-top: 6px; }
+.oc-section-title { margin: 0 0 14px; font-family: var(--font-serif); font-size: 23px; font-weight: 400; line-height: 1.3; }
+.oc-muted { color: var(--color-text-3); font-size: 13px; line-height: 1.7; }
+.oc-roadmap { margin: 22px 0 24px; padding: 0; list-style: none; }
+.oc-roadmap li { display: flex; gap: 14px; padding: 20px 0; border-top: 1px solid var(--color-hairline); }
+.oc-roadmap h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.oc-roadmap p { margin: 0; color: var(--color-text-3); font-size: 12px; line-height: 1.7; }
+.oc-step-number { color: var(--color-accent); font-size: 11px; font-weight: 600; padding-top: 2px; }
+.oc-example-document { padding: 34px 30px 40px; background: var(--color-card); border: 1px solid var(--color-hairline); }
+.oc-example-label { margin: 0 0 22px; color: var(--color-accent); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .12em; }
+.oc-example-title { margin: 0 0 20px; font-family: var(--font-serif); font-size: 29px; font-weight: 400; line-height: 1.35; }
+.oc-example-text { margin: 0 0 18px; font-size: 14px; line-height: 1.8; color: var(--color-text-2); }
+.oc-example-document h3 { margin: 24px 0 12px; font-size: 14px; font-weight: 600; }
+.oc-example-list { margin: 0; padding-left: 20px; list-style: square; font-size: 13px; line-height: 1.9; color: var(--color-text-2); }
+.oc-example-list li::marker { color: var(--color-accent); }
+.oc-example-sheet { padding-top: 8px; }
+.oc-example-sheet .oc-example-title { font-size: 25px; }
+.oc-sheet-scroll { overflow-x: auto; }
+.oc-sheet-scroll table { min-width: 420px; font-size: 12px; }
+.oc-sheet-scroll th, .oc-sheet-scroll td { padding: 12px 14px; }
+.oc-sheet-scroll [data-slot="table-container"] { box-shadow: none; }
+.oc-module-extra { margin-top: 36px; }
+.oc-alert { border: 1px solid var(--color-warn); background: var(--color-surface); color: var(--color-text-2); padding: 14px 18px; margin: 0 0 24px; font-size: 13px; line-height: 1.6; }
+.oc-embed { padding: 20px; max-width: 1000px; margin: auto; }
+.oc-embed-heading { display: flex; align-items: center; gap: 12px; padding: 0 0 18px; font-size: 14px; flex-wrap: wrap; }
+.oc-embed-heading > a { margin-left: auto; color: var(--color-accent); font-size: 12px; }
+.oc-embed .oc-preview-footer { padding: 14px 0 0; margin-top: 20px; background: transparent; }
+.oc-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--color-hairline); padding: 14px max(24px, calc((100vw - 1200px) / 2)); color: var(--color-text-3); font-size: 11px; }
+.oc-footer > span:first-child { color: var(--color-text-2); font-family: var(--font-sans); font-size: 13px; }
+
+@media (max-width: 900px) {
+  .oc-module-layout { grid-template-columns: 1fr; gap: 30px; }
+  .oc-module-sidebar { max-width: 680px; }
+}
+
+@media (max-width: 760px) {
+  .oc-sidebar { display: none; }
+  .oc-top-nav { gap: 12px; padding: 0 14px; }
+  .oc-header-button[data-slot="button"] { width: 44px; height: 44px; min-width: 44px; }
+}
+
+@media (max-width: 600px) {
+  .oc-top-nav { gap: 8px; padding: 0 12px; height: 56px; }
+  .oc-brand-logo { height: 26px; }
+  .oc-header-actions { gap: 4px; }
+  .oc-current-app { display: none; }
+  .oc-main { padding: 24px 16px 32px; }
+  .oc-page-heading { gap: 16px; }
+  .oc-lead { font-size: 15px; }
+  .oc-scaffold-badge { margin-top: 29px; }
+  .oc-module-facts { grid-template-columns: 1fr; }
+  .oc-module-facts > div { border-right: 0; border-bottom: 1px solid var(--color-hairline); padding: 13px 18px; }
+  .oc-module-facts > div:last-child { border-bottom: 0; }
+  .oc-preview-header { flex-direction: column; align-items: flex-start; }
+  .oc-example-document { padding: 26px 20px; }
+  .oc-example-title { font-size: 25px; }
+  .oc-embed { padding: 16px; }
+}

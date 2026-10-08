@@ -1,0 +1,51 @@
+{
+  "name": "enoughmail",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "description": "Open-source, self-hosted email on Cloudflare Workers.",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "vendor/*"
+  ],
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "postinstall": "node vendor/enough-ui/scripts/build.mjs",
+    "dev": "vite --config apps/mail/vite.config.ts apps/mail --mode standalone",
+    "build": "npm run build --workspace @open-cloud/mail -- --mode standalone",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs && vitest run",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "check": "npm run check:architecture && npm run typecheck && npm test && npm run build",
+    "mail:configure": "node scripts/deploy-mail.mjs --configure",
+    "mail:deploy": "node scripts/deploy-mail.mjs",
+    "demo": "vite --config demo/vite.config.ts"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@types/node": "^22.20.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "happy-dom": "^20.14.5",
+    "tailwindcss": "^4.3.3",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3",
+    "wrangler": "^4.147.0"
+  },
+  "overrides": {
+    "@tailwindcss/cli": {
+      "@parcel/watcher": "2.6.0"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/enoughtools/enoughmail.git"
+  }
+}

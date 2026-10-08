@@ -1,0 +1,79 @@
+{
+  "name": "open-cloud-mail",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-05",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "vars": {
+    "AUTH_PROVIDER": "cloudflare-access",
+    "MAIL_DELIVERY_EVENTS_QUEUE": "open-cloud-mail-delivery"
+  },
+  "workers_dev": false,
+  "preview_urls": false,
+  "services": [
+    {
+      "binding": "CORE",
+      "service": "open-cloud-core"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MAIL_ACCOUNTS",
+        "class_name": "MailAccount"
+      },
+      {
+        "name": "MAIL_DIRECTORY",
+        "class_name": "MailDirectory"
+      },
+      {
+        "name": "MAIL_CREDENTIALS",
+        "class_name": "MailCredentials"
+      },
+      {
+        "name": "MAIL_PUSH_REGISTRY",
+        "class_name": "MailPushRegistry"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "MailAccount",
+        "MailDirectory",
+        "MailCredentials"
+      ]
+    },
+    {
+      "tag": "v2-push",
+      "new_sqlite_classes": [
+        "MailPushRegistry"
+      ]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MAIL_BLOBS",
+      "bucket_name": "open-cloud-mail-blobs"
+    }
+  ],
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "not_found_handling": "single-page-application"
+  },
+  "queues": {
+    "consumers": [
+      {
+        "queue": "open-cloud-mail-delivery",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 5,
+        "dead_letter_queue": "open-cloud-mail-delivery-dead"
+      }
+    ]
+  }
+}

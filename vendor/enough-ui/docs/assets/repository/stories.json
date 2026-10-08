@@ -1,0 +1,72 @@
+{
+  "captured": "2026-10-03",
+  "source": "Current EnoughUI Storybook source fixtures",
+  "content": "Synthetic demonstration content; no customer data.",
+  "fonts": "Approved self-hosted Space Grotesk and Libre Caslon Text",
+  "captures": [
+    {
+      "story": "ui-questionnaire--default",
+      "file": "questionnaire.png",
+      "renderer": "React",
+      "viewport": {
+        "width": 790,
+        "height": 780
+      },
+      "scale": 2,
+      "clip": {
+        "x": 29.5,
+        "y": 96.5,
+        "width": 716,
+        "height": 587
+      }
+    },
+    {
+      "story": "ui-combobox--open",
+      "file": "combobox.png",
+      "renderer": "React",
+      "viewport": {
+        "width": 650,
+        "height": 670
+      },
+      "scale": 2,
+      "clip": {
+        "x": 38,
+        "y": 38,
+        "width": 404,
+        "height": 358
+      }
+    },
+    {
+      "story": "ui-chart--default",
+      "file": "chart.png",
+      "renderer": "React",
+      "viewport": {
+        "width": 780,
+        "height": 930
+      },
+      "scale": 2,
+      "clip": {
+        "x": 44.5,
+        "y": 194,
+        "width": 676,
+        "height": 542
+      }
+    },
+    {
+      "story": "astro-card--composed",
+      "file": "astro-card.png",
+      "renderer": "Astro",
+      "viewport": {
+        "width": 660,
+        "height": 390
+      },
+      "scale": 2,
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 647,
+        "height": 250.25
+      }
+    }
+  ]
+}

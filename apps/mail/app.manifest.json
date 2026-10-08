@@ -1,0 +1,1674 @@
+{
+  "id": "mail",
+  "name": "Mail",
+  "version": "0.1.0",
+  "description": "Private JMAP email workspace with mailboxes, labels, rules and snooze.",
+  "icon": "mail",
+  "capabilities": [
+    "workspace:mcp"
+  ],
+  "embeds": [],
+  "fileHandlers": [],
+  "nativeResources": [
+    {
+      "resourceType": "mail.account",
+      "actions": [
+        "mail.read",
+        "mail.organize",
+        "mail.draft",
+        "mail.send",
+        "mail.manage"
+      ],
+      "adminReadActions": [
+        "mail.read"
+      ]
+    }
+  ],
+  "mcp": {
+    "version": 1,
+    "tools": [
+      {
+        "name": "mail_list_emails",
+        "title": "Search email",
+        "description": "Search email in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "query": {
+              "type": "string",
+              "maxLength": 1000
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_email",
+        "title": "Read email",
+        "description": "Read email in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "emailId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          },
+          "required": [
+            "resourceId",
+            "emailId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_update_email",
+        "title": "Organize email",
+        "description": "Organize email in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "patchJson": {
+              "type": "string",
+              "maxLength": 16384
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailId",
+            "patchJson"
+          ]
+        },
+        "actions": [
+          "mail.organize"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_create_draft",
+        "title": "Create draft",
+        "description": "Create draft in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailJson": {
+              "type": "string",
+              "maxLength": 16384
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailJson"
+          ]
+        },
+        "actions": [
+          "mail.draft"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_send_email",
+        "title": "Submit prepared email",
+        "description": "Submit an email prepared by the current actor from their own content. Use the shared-draft tool for other readable drafts.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "identityId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sendAt": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "undoSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailId",
+            "identityId"
+          ]
+        },
+        "actions": [
+          "mail.send"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_send_shared_draft",
+        "title": "Submit shared draft",
+        "description": "Submit an existing readable draft using current mailbox-reading and sending permissions.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "identityId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sendAt": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "undoSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailId",
+            "identityId"
+          ]
+        },
+        "actions": [
+          "mail.read",
+          "mail.send"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_schedule_email",
+        "title": "Schedule prepared email",
+        "description": "Schedule an email prepared by the current actor from their own content. Use the shared-draft tool for other readable drafts.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "identityId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sendAt": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "undoSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailId",
+            "identityId",
+            "sendAt"
+          ]
+        },
+        "actions": [
+          "mail.send"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_schedule_shared_draft",
+        "title": "Schedule shared draft",
+        "description": "Schedule an existing readable draft using current mailbox-reading and sending permissions.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "identityId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sendAt": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "undoSeconds": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailId",
+            "identityId",
+            "sendAt"
+          ]
+        },
+        "actions": [
+          "mail.read",
+          "mail.send"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_submissions",
+        "title": "Read your submissions",
+        "description": "Read your submissions in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.send"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_cancel_submission",
+        "title": "Cancel pending submission",
+        "description": "Cancel pending submission in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "submissionId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "submissionId"
+          ]
+        },
+        "actions": [
+          "mail.send"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_rules",
+        "title": "Read sorting rules",
+        "description": "Read sorting rules in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_set_rules",
+        "title": "Update sorting rules",
+        "description": "Update sorting rules in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "createJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "updateJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "destroy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence"
+          ]
+        },
+        "actions": [
+          "mail.organize"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_mailboxes",
+        "title": "Read mailboxes and labels",
+        "description": "Read mailboxes and labels in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_set_mailboxes",
+        "title": "Update mailboxes and labels",
+        "description": "Update mailboxes and labels in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "createJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "updateJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "destroy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence"
+          ]
+        },
+        "actions": [
+          "mail.organize"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_identities",
+        "title": "Read sender identities",
+        "description": "Read sender identities in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_set_identities",
+        "title": "Update sender identities",
+        "description": "Update sender identities in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "createJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "updateJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "destroy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence"
+          ]
+        },
+        "actions": [
+          "mail.manage"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_domains",
+        "title": "Read attached domains",
+        "description": "Read attached domains in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_set_domains",
+        "title": "Update attached domains",
+        "description": "Update attached domains in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "createJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "updateJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "destroy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence"
+          ]
+        },
+        "actions": [
+          "mail.manage"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_contacts",
+        "title": "Read contacts",
+        "description": "Read contacts in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_set_contacts",
+        "title": "Update contacts",
+        "description": "Update contacts in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "createJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "updateJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "destroy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence"
+          ]
+        },
+        "actions": [
+          "mail.manage",
+          "mail.draft"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_templates",
+        "title": "Read templates",
+        "description": "Read templates in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_set_templates",
+        "title": "Update templates",
+        "description": "Update templates in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "createJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "updateJson": {
+              "type": "string",
+              "maxLength": 16384
+            },
+            "destroy": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence"
+          ]
+        },
+        "actions": [
+          "mail.manage",
+          "mail.draft"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_snooze_emails",
+        "title": "Snooze email",
+        "description": "Snooze email in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            },
+            "until": {
+              "type": "string",
+              "maxLength": 64
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailIds",
+            "until"
+          ]
+        },
+        "actions": [
+          "mail.organize"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_unsnooze_emails",
+        "title": "Unsnooze email",
+        "description": "Unsnooze email in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailIds"
+          ]
+        },
+        "actions": [
+          "mail.organize"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_follow_up_emails",
+        "title": "Set follow-up reminder",
+        "description": "Set follow-up reminder in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            },
+            "until": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "ifNoReply": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailIds",
+            "until"
+          ]
+        },
+        "actions": [
+          "mail.organize"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_clear_follow_up",
+        "title": "Clear follow-up reminder",
+        "description": "Clear follow-up reminder in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "emailIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "maxItems": 100
+            },
+            "ifNoReply": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "emailIds"
+          ]
+        },
+        "actions": [
+          "mail.organize"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_get_settings",
+        "title": "Read Mail settings",
+        "description": "Read Mail settings in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            }
+          },
+          "required": [
+            "resourceId"
+          ]
+        },
+        "actions": [
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_set_settings",
+        "title": "Update Mail settings",
+        "description": "Update Mail settings in an authorized Mail account.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "settingsJson": {
+              "type": "string",
+              "maxLength": 16384
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "settingsJson"
+          ]
+        },
+        "actions": [
+          "mail.manage"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_domain_plan",
+        "title": "Plan domain DNS",
+        "description": "Plan domain DNS in an authorized Mail account. Requires verified workspace owner or administrator membership and a Directory-approved Cloudflare zone.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "domainId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          },
+          "required": [
+            "resourceId",
+            "domainId"
+          ]
+        },
+        "actions": [
+          "mail.manage",
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "read",
+        "annotations": {
+          "readOnlyHint": true,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_domain_apply",
+        "title": "Apply domain DNS",
+        "description": "Apply domain DNS in an authorized Mail account. Requires verified workspace owner or administrator membership and a Directory-approved Cloudflare zone.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "domainId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "planJson": {
+              "type": "string",
+              "maxLength": 16384
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "domainId",
+            "planJson"
+          ]
+        },
+        "actions": [
+          "mail.manage",
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      },
+      {
+        "name": "mail_domain_verify",
+        "title": "Verify domain DNS",
+        "description": "Verify domain DNS in an authorized Mail account. Requires verified workspace owner or administrator membership and a Directory-approved Cloudflare zone.",
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resourceId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "operationId": {
+              "type": "string",
+              "minLength": 36,
+              "maxLength": 36
+            },
+            "expectedSequence": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "domainId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          },
+          "required": [
+            "resourceId",
+            "operationId",
+            "expectedSequence",
+            "domainId"
+          ]
+        },
+        "actions": [
+          "mail.manage",
+          "mail.read"
+        ],
+        "resourceArgument": "resourceId",
+        "resourceType": "mail.account",
+        "handlerPath": "/internal/mcp",
+        "execution": "request",
+        "effect": "write",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        }
+      }
+    ]
+  }
+}

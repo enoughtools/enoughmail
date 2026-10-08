@@ -1,0 +1,15 @@
+{
+  "name": "@open-cloud/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./native-seed-admission-signing": "./src/native-seed-admission-signing.ts",
+    "./native-seed-admission-verification": "./src/native-seed-admission-verification.ts"
+  },
+  "dependencies": {
+    "@open-cloud/contracts": "*",
+    "jose": "^6.1.0"
+  }
+}

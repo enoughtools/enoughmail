@@ -1,0 +1,156 @@
+/* Product-owned settings layout. EnoughUI controls retain their native interaction styles. */
+.mail-settings.mail-settings{padding:24px 28px;background:var(--color-paper);color:var(--color-text-main)}
+.mail-settings .mail-settings-header{padding:0 0 20px;margin-bottom:24px;border-bottom:1px solid var(--color-hairline);gap:20px}
+.mail-settings .mail-settings-header h2{font-size:28px;line-height:1.2;margin:0}
+.mail-settings .mail-settings-mobile-nav{display:none}
+.mail-settings .mail-settings-layout{display:grid;grid-template-columns:176px minmax(0,1fr);gap:32px;max-width:1200px;margin:0 auto}
+.mail-settings .mail-settings-layout>.mail-settings-tabs{display:flex;flex-direction:column;gap:3px;min-width:0;border:0;padding:0;align-self:start;position:sticky;top:20px}
+.mail-settings .mail-settings-tabs>p{margin:20px 10px 7px;font:600 11px/1.5 var(--font-sans,sans-serif);letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-3)}
+.mail-settings .mail-settings-tabs>p:first-child{margin-top:0}
+.mail-settings .mail-settings-tabs details{margin-top:16px;font-size:13px}
+.mail-settings .mail-settings-tabs details summary{padding:8px 10px;color:var(--color-text-3)}
+.mail-settings .mail-settings-body{padding:0;max-width:1040px;min-width:0;font-size:14px;line-height:1.55}
+.mail-settings .mail-settings-page-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding-bottom:22px;margin-bottom:24px;border-bottom:1px solid var(--color-hairline)}
+.mail-settings .mail-settings-page-heading h3{font-size:26px;line-height:1.2;margin:0 0 8px;font-weight:500}
+.mail-settings .mail-settings-page-heading p{max-width:640px;margin:0;color:var(--color-text-3);font-size:14px}
+.mail-settings .mail-settings-page-heading>button{flex-shrink:0;margin-top:2px}
+.mail-settings .mail-settings-body h4{font-size:17px;line-height:1.3;font-weight:600;margin:0 0 12px;font-family:var(--font-sans,sans-serif)}
+.mail-settings .mail-settings-body p{margin:0 0 14px;line-height:1.55}
+.mail-settings .mail-settings-body p:empty{display:none}
+.mail-settings .mail-settings-field{display:grid;gap:7px;margin:0;max-width:100%;font-size:13px;font-weight:500;line-height:1.4;color:var(--color-text-main)}
+.mail-settings .mail-settings-check{display:flex;align-items:flex-start;gap:9px;line-height:1.5;font-size:14px;font-weight:400;margin:0;max-width:100%}
+.mail-settings .mail-settings-body :is(form,fieldset){display:grid;gap:18px;border:1px solid var(--color-hairline);padding:24px;margin:0 0 24px;border-radius:0;background:var(--color-card);min-width:0;box-shadow:none}
+.mail-settings .mail-settings-body form fieldset{padding:20px;margin:0;background:var(--color-paper)}
+.mail-settings .mail-settings-body fieldset legend{font-size:14px;font-weight:600;padding:0 6px}
+.mail-settings .mail-settings-body form>p{font-size:13px;color:var(--color-text-3);margin:0;max-width:680px}
+.mail-settings .mail-settings-body form h4{margin:0}
+.mail-settings .mail-settings-body form>button{justify-self:start}
+.mail-settings .mail-settings-form-footer{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:18px;border-top:1px solid var(--color-hairline)}
+.mail-settings .mail-settings-editor{max-width:760px}
+.mail-settings .mail-settings-body .mail-preferences-form{border:0;padding:0;background:transparent;gap:24px}
+.mail-settings .mail-preferences-form>fieldset{padding:24px;background:var(--color-card);margin:0}
+.mail-settings .mail-preferences-form>button{justify-self:start}
+.mail-settings .mail-secondary-tools,.mail-settings .mail-advanced-fields{border:1px solid var(--color-hairline);padding:0;margin:0 0 20px;border-radius:0;background:var(--color-card);font-size:13px}
+.mail-settings :is(.mail-secondary-tools,.mail-advanced-fields)>summary{padding:12px 16px;font-weight:500;cursor:pointer}
+.mail-settings :is(.mail-secondary-tools,.mail-advanced-fields)[open]{padding:0 16px 18px}
+.mail-settings :is(.mail-secondary-tools,.mail-advanced-fields)[open]>summary{margin:0 -16px 16px;border-bottom:1px solid var(--color-hairline)}
+.mail-settings :is(.mail-secondary-tools,.mail-advanced-fields)>:not(summary){margin-bottom:14px}
+.mail-settings .mail-settings-list{list-style:none;margin:0 0 24px;padding:0;border:1px solid var(--color-hairline);background:var(--color-card)}
+.mail-settings .mail-settings-list:empty{display:none}
+.mail-settings .mail-settings-list>li{display:flex;gap:20px;align-items:center;padding:16px 18px;border:0;border-bottom:1px solid var(--color-hairline);margin:0;border-radius:0}
+.mail-settings .mail-settings-list>li:last-child{border-bottom:0}
+.mail-settings .mail-settings-list>li>div:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+.mail-settings .mail-settings-list>li>div:last-child{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+.mail-settings .mail-settings-list strong{font-weight:600;font-size:14px}
+.mail-settings .mail-setting-secondary{display:block;margin-top:4px;font-size:12px;color:var(--color-text-3)}
+.mail-settings .mail-settings-list p{font-size:12px;color:var(--color-text-3);margin:4px 0 0}
+.mail-settings .mail-settings-search{display:block;margin:0 0 16px;max-width:440px}
+.mail-settings .mail-settings-search>span{display:block;font-size:12px;margin-bottom:6px;color:var(--color-text-3)}
+.mail-settings .mail-setting-actions-menu,.mail-settings .mail-setting-domain-steps{font-size:13px;position:relative}
+.mail-settings :is(.mail-setting-actions-menu,.mail-setting-domain-steps)>summary{cursor:pointer;list-style:none;padding:8px 12px;border:1px solid var(--color-hairline);min-height:36px;box-sizing:border-box}
+.mail-settings :is(.mail-setting-actions-menu,.mail-setting-domain-steps)[open]{flex-basis:100%}
+.mail-settings :is(.mail-setting-actions-menu,.mail-setting-domain-steps)>div{display:flex;flex-wrap:wrap;gap:8px;padding:12px 0 0}
+.mail-settings .mail-setting-domain-steps>div{display:grid;grid-template-columns:minmax(0,1fr);justify-items:start}
+.mail-settings .mail-setting-domain-steps>div>p{margin-bottom:6px}
+.mail-settings .mail-settings-collection-heading{display:flex;gap:10px;align-items:center;margin-top:28px}
+.mail-settings .mail-settings-collection-heading span{font-size:12px;color:var(--color-text-3);font-weight:400}
+.mail-settings .mail-settings-empty{padding:48px 24px;border:1px dashed var(--color-hairline);border-radius:0;box-shadow:none;background:transparent;min-height:0;margin:16px 0}
+.mail-settings .mail-settings-empty [data-slot=empty-title]{font-family:var(--font-sans,sans-serif);font-size:16px;font-weight:500}
+.mail-settings .mail-settings-empty [data-slot=empty-description]{font-size:13px;max-width:420px}
+.mail-settings .mail-settings-inline-empty{padding:24px;margin-bottom:24px;border:1px dashed var(--color-hairline)}
+.mail-settings .mail-settings-inline-empty p{font-size:13px;color:var(--color-text-3);margin:6px 0 0}
+.mail-settings .mail-settings-body [role=alert]{padding:12px 14px;border-left:3px solid var(--color-warn);background:color-mix(in srgb, var(--color-warn) 10%, var(--color-surface));font-size:13px;margin:0 0 20px;overflow-wrap:anywhere}
+.mail-settings .mail-settings-body [role=status]{font-size:13px;color:var(--color-text-3)}
+.mail-settings .mail-account-intro{display:none}
+.mail-settings .mail-account-list{list-style:none;padding:0;margin:0 0 24px;display:grid;gap:10px}
+.mail-settings .mail-account-list li{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid var(--color-hairline);background:var(--color-card)}
+.mail-settings .mail-account-list li span{display:block;font-size:12px;color:var(--color-text-3);margin-top:3px}
+.mail-settings .mail-account-avatar{height:36px;width:36px;display:grid;place-items:center;flex:0 0 36px;background:var(--color-accent-soft);color:var(--color-accent);font-weight:600}
+.mail-settings .mail-delegation-list{list-style:none;margin:0 0 20px;padding:0}
+.mail-settings .mail-delegation-list li{padding:16px;border-bottom:1px solid var(--color-hairline);display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.mail-settings .mail-domain-discovery{border-radius:0!important;box-shadow:none;background:var(--color-card)}
+.mail-settings .mail-domain-discovery [data-slot=card-header]{padding:20px 20px 0;gap:7px}
+.mail-settings .mail-domain-discovery [data-slot=card-title]{font:600 17px/1.3 var(--font-sans,sans-serif);margin:0}
+.mail-settings .mail-domain-discovery [data-slot=card-description]{font-size:13px;line-height:1.5}
+.mail-settings .mail-domain-discovery [data-slot=card-content]{padding:18px 20px 0}
+.mail-settings .mail-domain-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;border:1px solid var(--color-hairline);background:var(--color-hairline);padding:0;margin-bottom:18px}
+.mail-settings .mail-domain-overview>span{padding:12px;background:var(--color-paper);font-size:11px;line-height:1.5}
+.mail-settings .mail-domain-overview strong{display:block;font-size:22px;font-weight:500}
+.mail-settings .mail-domain-candidates{margin:16px -20px 0;padding:0;max-height:none;overflow:visible}
+.mail-settings .mail-domain-candidates>li{padding:14px 20px;gap:12px;border-bottom:1px solid var(--color-hairline);align-items:center}
+.mail-settings .mail-domain-candidates>li:last-child{border-bottom:0}
+.mail-settings .mail-domain-name strong{font-size:14px;font-weight:600}
+.mail-settings .mail-domain-status{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.mail-settings .mail-domain-records{font-size:11px;line-height:1.4;margin:0;max-width:480px}
+.mail-settings .mail-domain-status [data-slot=badge]{font-size:11px;font-weight:400;border-radius:0}
+.mail-settings .mail-domain-candidates .mail-domain-review{border-radius:0;margin:0;padding:16px;background:var(--color-paper)}
+.mail-settings .mail-domain-review p{font-size:13px}
+.mail-settings .mail-domain-review .mail-help{font-size:12px;margin:12px 0 0}
+.mail-settings .mail-dns-plan{padding:20px;border:1px solid var(--color-hairline);background:var(--color-card);margin:20px 0;overflow:auto}
+.mail-settings .mail-settings-body table{width:100%;border-collapse:collapse;font-size:12px}
+.mail-settings .mail-settings-body th{text-align:left;font-size:11px;font-weight:600;color:var(--color-text-3);background:var(--color-paper)}
+.mail-settings .mail-settings-body :is(td,th){padding:10px 12px;vertical-align:top}
+.mail-settings .mail-settings-body dl{padding:20px;margin:0 0 24px;border-radius:0;border:1px solid var(--color-hairline);background:var(--color-card);font-size:13px}
+.mail-settings .mail-settings-body dt{color:var(--color-text-3)}
+.mail-settings .mail-settings-body dd{font-weight:500;overflow-wrap:anywhere}
+.mail-settings .mail-storage-settings>section,.mail-settings .mail-automation-health{border:1px solid var(--color-hairline);padding:24px;border-radius:0;background:var(--color-card);margin:0 0 24px}
+.mail-settings .mail-storage-settings>section[aria-label="Mail account lifecycle"]{border-left:3px solid var(--color-warn)}
+.mail-settings .mail-storage-settings>section>button,.mail-settings .mail-automation-health>button,.mail-settings .mail-offline-preferences>button,.mail-settings .mail-contact-portability>button{margin:0 8px 8px 0}
+.mail-settings .mail-settings-subsection{padding:24px;border:1px solid var(--color-hairline);background:var(--color-card);margin:0 0 24px;display:grid;gap:16px}
+.mail-settings .mail-settings-subsection>p{font-size:13px;color:var(--color-text-3);margin:0}
+.mail-settings .mail-inline-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.mail-settings .mail-rule-fields>fieldset{margin-bottom:20px}
+.mail-settings .mail-rule-fields>fieldset>.mail-settings-field{display:inline-grid;max-width:100%}
+.mail-settings .mail-migration .mail-migration-file-import{margin-bottom:24px}
+.mail-settings .mail-contact-portability>p{max-width:650px;font-size:13px;color:var(--color-text-3)}
+.mail-settings .mail-storage-settings>button{margin-bottom:22px}
+@media(max-width:1000px){.mail-settings .mail-settings-layout{grid-template-columns:150px minmax(0,1fr);gap:24px}.mail-settings.mail-settings{padding:20px}.mail-settings .mail-settings-list>li{align-items:flex-start;flex-direction:column}.mail-settings .mail-settings-list>li>div:last-child{justify-content:flex-start}}
+@media(max-width:720px){.mail-settings.mail-settings{padding:16px}.mail-settings .mail-settings-layout{display:block}.mail-settings .mail-settings-layout>.mail-settings-tabs{display:none}.mail-settings .mail-settings-mobile-nav{display:grid;gap:6px;margin-bottom:24px;font-size:12px}.mail-settings .mail-settings-page-heading{gap:12px;flex-wrap:wrap}.mail-settings .mail-settings-page-heading h3{font-size:24px}.mail-settings .mail-settings-header h2{font-size:24px}.mail-settings .mail-settings-body :is(form,fieldset),.mail-settings .mail-settings-subsection,.mail-settings .mail-storage-settings>section,.mail-settings .mail-automation-health{padding:16px}.mail-settings .mail-domain-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.mail-settings .mail-domain-candidates>li>button{width:auto}.mail-settings .mail-domain-name strong{width:auto}.mail-settings .mail-domain-discovery [data-slot=card-content]{padding:16px 16px 0}.mail-settings .mail-domain-discovery [data-slot=card-header]{padding:16px 16px 0}.mail-settings .mail-domain-candidates{margin-left:-16px;margin-right:-16px}.mail-settings .mail-domain-candidates>li{padding:14px 16px}.mail-settings .mail-settings-body dl{grid-template-columns:1fr;gap:4px}.mail-settings .mail-settings-body dd{margin-bottom:10px}.mail-settings .mail-settings-body form fieldset{padding:12px}.mail-settings .mail-settings-form-footer{gap:8px}}
+.mail-settings .mail-contacts-preview-table{max-height:360px;overflow:auto;border:1px solid var(--color-hairline);margin-bottom:16px}
+.mail-settings .mail-contacts-preview-table th{position:sticky;top:0}
+.mail-settings .mail-contact-portability>h4:not(:first-child){margin-top:28px}
+.mail-settings .mail-storage-meter{display:grid;gap:7px;margin-bottom:16px;font-size:12px;color:var(--color-text-3)}
+.mail-settings .mail-storage-meter progress{width:100%;height:8px;accent-color:var(--color-accent)}
+.mail-settings .mail-automation-status{border-left:3px solid var(--color-accent);padding:12px 14px;background:var(--color-accent-soft)}
+.mail-settings .mail-automation-status[data-state=expired]{border-left-color:var(--color-warn);background:color-mix(in srgb, var(--color-warn) 10%, var(--color-surface))}
+.mail-settings .mail-rule-fields{display:grid;gap:18px}
+.mail-settings .mail-rule-fields fieldset>.mail-settings-field{max-width:100%}
+.mail-settings .mail-domain-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,.65fr);gap:12px}
+.mail-settings .mail-domain-mx-records{list-style:none;padding:0;display:grid;gap:8px;font-size:12px;overflow-wrap:anywhere}
+.mail-settings .mail-domain-review .mail-secondary-tools{margin:12px 0}
+@media(max-width:720px){.mail-settings .mail-domain-filters{grid-template-columns:1fr}}
+.mail-settings .mail-domain-setup-progress{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:16px;border:1px solid var(--color-hairline);background:var(--color-accent-soft);margin-bottom:20px}
+.mail-settings .mail-domain-setup-progress p{flex:1;min-width:180px;margin:0}
+.mail-settings .mail-domain-setup-progress[data-state=blocked]{border-left:3px solid var(--color-warn);background:color-mix(in srgb, var(--color-warn) 10%, var(--color-surface))}
+.mail-settings .mail-signature-preview{white-space:pre-line;padding-top:9px;border-top:1px solid var(--color-hairline);max-width:480px;margin-top:10px!important}
+.mail-settings .mail-template-preview{max-width:560px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mail-settings .mail-account-list>li{justify-content:flex-start;border-radius:0}
+.mail-settings .mail-settings-list>li.mail-folder-group-heading{padding:9px 18px;background:var(--color-paper);font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--color-text-3)}
+.mail-settings .mail-settings-list>li[data-standard=true]{padding:9px 18px;min-height:36px;flex-direction:row;align-items:center}
+.mail-settings .mail-settings-list>li[data-standard=true] .mail-setting-secondary{display:none}
+.mail-settings .mail-settings-list>li[data-standard=true] strong{font-size:13px;font-weight:400}
+.mail-settings .mail-settings-list .mail-folder-color{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:9px;vertical-align:middle}
+.mail-settings .mail-settings-body form>.mail-preferences-authority{padding:0;border:0;background:transparent;gap:24px;margin:0}
+.mail-settings .mail-preferences-authority>fieldset{padding:24px!important;background:var(--color-card)!important}
+.mail-settings .mail-settings-permission-note{padding:12px 14px;border-left:2px solid var(--color-hairline);background:var(--color-card);font-size:13px;color:var(--color-text-3)}
+@media(max-width:720px){.mail-settings .mail-preferences-authority>fieldset{padding:16px!important}}
+.mail-settings .mail-settings-tabs [data-slot=button]{justify-content:flex-start;text-align:left;width:100%}
+.mail-settings .mail-settings-tabs details [data-slot=button]{display:flex;width:100%}
+.mail-settings .mail-settings-check [data-slot=checkbox]{margin-top:2px}
+.mail-settings .mail-settings-inbox-scope{border-bottom:1px solid var(--color-hairline);padding-bottom:18px;margin-bottom:24px;display:grid;gap:4px}
+.mail-settings .mail-settings-inbox-scope>span{font-size:11px;color:var(--color-text-3)}
+.mail-settings .mail-settings-inbox-scope>strong{font-size:15px;font-weight:600}
+.mail-settings .mail-settings-inbox-scope>p{font-size:12px;color:var(--color-text-3);margin:0;overflow-wrap:anywhere}
+.mail-settings .mail-identity-address-fields{display:grid;grid-template-columns:minmax(100px,1fr) auto minmax(150px,1fr);gap:10px;align-items:end}
+.mail-settings .mail-identity-address-fields>span{align-self:center;padding-top:24px}
+.mail-settings .mail-signature-library{display:grid;gap:20px;margin-top:20px}
+.mail-settings .mail-signature-library iframe{width:100%;min-height:120px;border:0;background:var(--color-surface)}
+.mail-settings .mail-signature-body{min-height:180px;padding:16px;border:1px solid var(--color-ink);background:var(--color-surface);overflow-wrap:anywhere}
+.mail-settings .mail-signature-body:focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
+.mail-settings .mail-signature-format{display:flex;flex-wrap:wrap;gap:4px}
+.mail-settings .mail-preference-save-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--color-text-3)}
+@media(max-width:720px){.mail-settings .mail-identity-address-fields{grid-template-columns:minmax(0,1fr)}.mail-settings .mail-identity-address-fields>span{display:none}}
+.mail-settings .mail-forwarding-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.mail-settings .mail-settings-tabs details>summary{cursor:pointer}
+.mail-settings .mail-rule-current-search{padding:14px;border-left:2px solid var(--color-accent);background:var(--color-hover)}
+.mail-settings .mail-rule-current-search p{font-size:12px;margin:6px 0 0;overflow-wrap:anywhere}

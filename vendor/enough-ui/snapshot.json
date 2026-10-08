@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "package": "@rebnz/enough-ui",
+  "version": "0.5.0",
+  "license": "MIT",
+  "source": "EnoughUI source checkout",
+  "revision": "be0d171ee9ca0dcb79836bc81f5d412979bb586b",
+  "hasUncommittedChanges": true,
+  "sha256": "8e4b9e8f5bc9d2fa308f67220af9b848bb94651a50bc280d74d5b08c50073689",
+  "sourceFiles": 230,
+  "buildAdapter": "Upstream build with pnpm exec replaced by workspace-resolved Node tool entry points."
+}

@@ -1,0 +1,10 @@
+{
+  "name": "enough-mail-scanner",
+  "main": "scanner-worker.ts",
+  "compatibility_date": "2026-10-05",
+  "workers_dev": false,
+  "preview_urls": false,
+  "containers": [{ "class_name": "MailScannerContainer", "image": "./scanner/Dockerfile", "instance_type": { "vcpu": 1, "memory_mib": 3072, "disk_mb": 4000 }, "max_instances": 1 }],
+  "durable_objects": { "bindings": [{ "name": "SCANNER", "class_name": "MailScannerContainer" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["MailScannerContainer"] }]
+}

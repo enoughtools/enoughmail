@@ -1,0 +1,14 @@
+/* Reader bodies grow with their content; the surrounding reader owns scrolling. */
+.mail-app .mail-formatted-message iframe {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: white;
+  overflow: hidden;
+}
+.mail-app .mail-message-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.mail-app .mail-message-body a { overflow-wrap: anywhere; }
+.mail-sender-authentication { display: grid; gap: 6px; border-top: 1px solid var(--color-hairline); margin-top: 12px; padding-top: 12px; max-width: 24rem; }
+.mail-sender-authentication strong { font-size: 12px; }
+.mail-sender-authentication p { margin: 0; font-size: 12px; line-height: 1.5; color: var(--color-text-3); }

@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "sourceRoots": [
+    "apps",
+    "packages"
+  ],
+  "workspaceRoots": [
+    "apps",
+    "packages",
+    "vendor"
+  ],
+  "exclusions": [
+    {
+      "pattern": "tests/**",
+      "reason": "Repository contract tests intentionally compose products; production cannot import them."
+    },
+    {
+      "pattern": "scripts/**",
+      "reason": "Deployment and repository tooling composes installation artifacts, not application runtime."
+    },
+    {
+      "pattern": "templates/**",
+      "reason": "Scaffolding is a tooling artifact, not an installed runtime product."
+    },
+    {
+      "pattern": "apps/*/vite*.config.ts",
+      "reason": "Build configuration composes tooling; it is not application runtime."
+    },
+    {
+      "pattern": "apps/*/tests/**",
+      "reason": "Product test infrastructure may compose application fixtures."
+    },
+    {
+      "pattern": "**/*.test.*",
+      "reason": "Tests may compose products to verify contracts; production cannot import them."
+    }
+  ],
+  "sharedAssets": [
+    "branding/**"
+  ],
+  "browserEntries": [
+    "apps/*/src/main.tsx",
+    "apps/*/src/main.ts",
+    "apps/*/src/main.jsx",
+    "apps/*/public-client/main.tsx",
+    "packages/client/src/**",
+    "packages/ui/src/**",
+    "packages/contracts/src/**",
+    "packages/collaboration/src/core.ts",
+    "packages/collaboration/src/protocol.ts",
+    "packages/collaboration/src/primitives.ts",
+    "packages/collaboration/src/browser-core.ts"
+  ],
+  "serverOnly": [
+    "apps/*/worker/**",
+    "apps/*/server/**",
+    "apps/*/src/server/**",
+    "apps/**/*.server.ts",
+    "packages/*/src/server/**",
+    "apps/*/src/worker.ts",
+    "apps/core/src/entity-*.ts",
+    "apps/core/src/mcp.ts",
+    "apps/core/src/content-authority.ts",
+    "apps/core/src/workspace-events.ts",
+    "packages/auth/**",
+    "packages/drive/**",
+    "packages/policy/**",
+    "packages/worker/**",
+    "packages/mcp/**",
+    "wrangler",
+    "agents",
+    "@cloudflare/workers-types"
+  ],
+  "forbiddenProductDependencies": [
+    "@open-cloud/drive",
+    "@open-cloud/policy"
+  ],
+  "forbiddenProductSurfaces": [
+    "@open-cloud/mcp",
+    "@open-cloud/mcp/oauth"
+  ],
+  "publicCompanions": {
+    "forbiddenBindings": [
+      "CORE",
+      "CATALOG",
+      "FILES",
+      "ENTITY_ROOMS",
+      "WORKSPACE_EVENTS",
+      "MCP_CONNECTIONS"
+    ],
+    "forbiddenVars": [
+      "AUTH_PROVIDER",
+      "ACCESS_TEAM_DOMAIN",
+      "ACCESS_AUDIENCE",
+      "ORGANIZATION_ID",
+      "WORKSPACE_ID",
+      "OWNER_PROVIDER",
+      "OWNER_SUBJECT",
+      "POLICY_LEGACY_SHARED",
+      "MCP_SIGNING_KEY",
+      "MCP_PUBLIC_ORIGIN",
+      "MCP_ALLOWED_ORIGINS",
+      "CONTENT_AUTHORITY_SIGNING_KEY",
+      "OPEN_CLOUD_REGISTRY",
+      "NATIVE_SEED_ADMISSION_PRIVATE_JWK",
+      "NATIVE_SEED_ADMISSION_KEY_ID",
+      "NATIVE_SEED_ADMISSION_KEY_GENERATION",
+      "NATIVE_SEED_ADMISSION_PUBLIC_JWKS",
+      "NATIVE_SEED_ADMISSION_INSTALLATION_ID",
+      "NATIVE_SEED_ADMISSION_EXPECTED_INSTALLATION"
+    ],
+    "forbiddenManifestFields": [
+      "public",
+      "publicApp",
+      "authentication"
+    ]
+  },
+  "productConcepts": [
+    {
+      "product": "clientdesk",
+      "identifiers": [
+        "ClientDesk",
+        "CLIENT_DESK"
+      ],
+      "strings": [
+        "clientdesk"
+      ]
+    },
+    {
+      "product": "invoices",
+      "identifiers": [
+        "Invoice",
+        "INVOICE"
+      ],
+      "strings": [
+        "invoice",
+        "invoices"
+      ]
+    },
+    {
+      "product": "approve",
+      "identifiers": [
+        "Approve",
+        "APPROVE"
+      ],
+      "strings": [
+        "approve"
+      ]
+    },
+    {
+      "product": "pdfsign",
+      "identifiers": [
+        "PdfSign",
+        "PDFSign",
+        "PDF_SIGN"
+      ],
+      "strings": [
+        "pdfsign"
+      ]
+    }
+  ],
+  "moduleOwnership": [],
+  "boundaryExceptions": [],
+  "productConceptExceptions": []
+}

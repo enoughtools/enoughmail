@@ -1,0 +1,16 @@
+node_modules/
+dist/
+dist-public/
+.open-cloud/
+.wrangler/
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+coverage/
+*.tsbuildinfo
+.DS_Store
+dist-standalone/
+
+apps/*/src/utilities.generated.css

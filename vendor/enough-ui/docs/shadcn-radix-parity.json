@@ -1,0 +1,1933 @@
+{
+  "schemaVersion": 1,
+  "reference": {
+    "repository": "https://github.com/shadcn-ui/ui",
+    "commit": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+    "commitDate": "2026-10-02T11:31:59Z",
+    "verifiedDate": "2026-10-03",
+    "catalog": "https://ui.shadcn.com/docs/components/radix/accordion",
+    "registryDirectory": "apps/v4/registry/bases/radix/ui",
+    "baseline": "Current Radix catalog plus legacy Form compatibility",
+    "activeCatalogFamilies": 65,
+    "legacyCompatibilityFamilies": 1
+  },
+  "guarantee": "EnoughUI targets documented capabilities and all public exports in this pinned baseline. Native Astro uses HTML attributes and slots; stateful behavior uses React islands. Export coverage alone does not certify behavior or UI quality.",
+  "families": [
+    {
+      "id": "accordion",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/accordion.tsx",
+      "upstreamBlob": "8cf54bf712b78dca13f4f72d4ec393ece4392824",
+      "react": {
+        "runtimeExports": [
+          "Accordion",
+          "AccordionContent",
+          "AccordionItem",
+          "AccordionTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "alert",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/alert.tsx",
+      "upstreamBlob": "e9aa02f381ef6e588cfb57696f76703c0f7c4ceb",
+      "react": {
+        "runtimeExports": [
+          "Alert",
+          "AlertAction",
+          "AlertDescription",
+          "AlertTitle"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Alert",
+          "AlertAction",
+          "AlertDescription",
+          "AlertTitle"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "alert-dialog",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/alert-dialog.tsx",
+      "upstreamBlob": "9726776cda43f26e624e88a3dc54ec22eaefdcb3",
+      "react": {
+        "runtimeExports": [
+          "AlertDialog",
+          "AlertDialogAction",
+          "AlertDialogCancel",
+          "AlertDialogContent",
+          "AlertDialogDescription",
+          "AlertDialogFooter",
+          "AlertDialogHeader",
+          "AlertDialogMedia",
+          "AlertDialogOverlay",
+          "AlertDialogPortal",
+          "AlertDialogTitle",
+          "AlertDialogTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "focus trap, initial cancel focus and mandatory choice",
+        "content sizes, media and action/cancel variants"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "aspect-ratio",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/aspect-ratio.tsx",
+      "upstreamBlob": "57e38fa96f9c0cb767d7b8de0d6dbc171d1b921a",
+      "react": {
+        "runtimeExports": [
+          "AspectRatio"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "AspectRatio"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "attachment",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/attachment.tsx",
+      "upstreamBlob": "b6211674f6154d7217114d8c6682706559b882ae",
+      "react": {
+        "runtimeExports": [
+          "Attachment",
+          "AttachmentAction",
+          "AttachmentActions",
+          "AttachmentContent",
+          "AttachmentDescription",
+          "AttachmentGroup",
+          "AttachmentMedia",
+          "AttachmentTitle",
+          "AttachmentTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Attachment",
+          "AttachmentAction",
+          "AttachmentActions",
+          "AttachmentContent",
+          "AttachmentDescription",
+          "AttachmentGroup",
+          "AttachmentMedia",
+          "AttachmentTitle",
+          "AttachmentTrigger"
+        ]
+      },
+      "requiredCapabilities": [
+        "size/orientation and upload-state presentation",
+        "image/icon media, actions and trigger composition"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "avatar",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/avatar.tsx",
+      "upstreamBlob": "5521146b8a3e525170852d5aa328aed6a7d69ac5",
+      "react": {
+        "runtimeExports": [
+          "Avatar",
+          "AvatarBadge",
+          "AvatarFallback",
+          "AvatarGroup",
+          "AvatarGroupCount",
+          "AvatarImage"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native-with-island-behavior",
+        "requiredComponents": [
+          "Avatar",
+          "AvatarBadge",
+          "AvatarFallback",
+          "AvatarGroup",
+          "AvatarGroupCount",
+          "AvatarImage"
+        ]
+      },
+      "requiredCapabilities": [
+        "image loading and failure fallback",
+        "sizes, badge and overlapping avatar groups"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "badge",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/badge.tsx",
+      "upstreamBlob": "b1d6ddb61bbb415afa3736a055949b732d689da3",
+      "react": {
+        "runtimeExports": [
+          "Badge",
+          "badgeVariants"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Badge"
+        ]
+      },
+      "requiredCapabilities": [
+        "standard variants including ghost and link",
+        "asChild link composition"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "breadcrumb",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/breadcrumb.tsx",
+      "upstreamBlob": "7bcdf3a21029aadfc411e63a34a748288355b1ee",
+      "react": {
+        "runtimeExports": [
+          "Breadcrumb",
+          "BreadcrumbEllipsis",
+          "BreadcrumbItem",
+          "BreadcrumbLink",
+          "BreadcrumbList",
+          "BreadcrumbPage",
+          "BreadcrumbSeparator"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Breadcrumb",
+          "BreadcrumbEllipsis",
+          "BreadcrumbItem",
+          "BreadcrumbLink",
+          "BreadcrumbList",
+          "BreadcrumbPage",
+          "BreadcrumbSeparator"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "bubble",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/bubble.tsx",
+      "upstreamBlob": "0c9d4885ccb0b8c5a27642f6bff2b363a82a303d",
+      "react": {
+        "runtimeExports": [
+          "Bubble",
+          "BubbleContent",
+          "BubbleGroup",
+          "BubbleReactions"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Bubble",
+          "BubbleContent",
+          "BubbleGroup",
+          "BubbleReactions"
+        ]
+      },
+      "requiredCapabilities": [
+        "variant and start/end alignment",
+        "content composition and reaction positions"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "button",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/button.tsx",
+      "upstreamBlob": "e6266ffa1f7d2a694f2abad0d51c215c8248c245",
+      "react": {
+        "runtimeExports": [
+          "Button",
+          "buttonVariants"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Button"
+        ]
+      },
+      "requiredCapabilities": [
+        "standard variants/sizes alongside EnoughUI variants",
+        "asChild composition, disabled state and visible focus"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "button-group",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/button-group.tsx",
+      "upstreamBlob": "831d57fb03390cffe842e46ac966915d3627177e",
+      "react": {
+        "runtimeExports": [
+          "ButtonGroup",
+          "ButtonGroupSeparator",
+          "ButtonGroupText",
+          "buttonGroupVariants"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "ButtonGroup",
+          "ButtonGroupSeparator",
+          "ButtonGroupText"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "calendar",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/calendar.tsx",
+      "upstreamBlob": "8bfe9f9c2c7d38270f4efb57052bae371ad319b1",
+      "react": {
+        "runtimeExports": [
+          "Calendar",
+          "CalendarDayButton"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "single/multiple/range selection",
+        "disabled dates, bounds, locale and keyboard navigation",
+        "month/year selection and day button customisation"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "card",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/card.tsx",
+      "upstreamBlob": "2062884f29a8044fa48edf86605182eca29f8716",
+      "react": {
+        "runtimeExports": [
+          "Card",
+          "CardAction",
+          "CardContent",
+          "CardDescription",
+          "CardFooter",
+          "CardHeader",
+          "CardTitle"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Card",
+          "CardAction",
+          "CardContent",
+          "CardDescription",
+          "CardFooter",
+          "CardHeader",
+          "CardTitle"
+        ]
+      },
+      "requiredCapabilities": [
+        "default and small size",
+        "header action placement"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "carousel",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/carousel.tsx",
+      "upstreamBlob": "4c3ae042698a3b812d9578b7a8b93854b2ea9f1d",
+      "react": {
+        "runtimeExports": [
+          "Carousel",
+          "CarouselContent",
+          "CarouselItem",
+          "CarouselNext",
+          "CarouselPrevious",
+          "useCarousel"
+        ],
+        "typeExports": [
+          "CarouselApi"
+        ]
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "chart",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/chart.tsx",
+      "upstreamBlob": "fa460c956066fbc5720ebe4203ba7353628201d5",
+      "react": {
+        "runtimeExports": [
+          "ChartContainer",
+          "ChartLegend",
+          "ChartLegendContent",
+          "ChartStyle",
+          "ChartTooltip",
+          "ChartTooltipContent"
+        ],
+        "typeExports": [
+          "ChartConfig"
+        ]
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "Recharts composition, responsive sizing and server rendering",
+        "configuration-based themed colors, tooltip and legend",
+        "accessible chart output and proportional labels"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "checkbox",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/checkbox.tsx",
+      "upstreamBlob": "0fd34ca4b01087ab971212a631dd56ffa1f9256d",
+      "react": {
+        "runtimeExports": [
+          "Checkbox"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "collapsible",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/collapsible.tsx",
+      "upstreamBlob": "2f7a4e7fc64a8874373c1584646a63f28cd63c47",
+      "react": {
+        "runtimeExports": [
+          "Collapsible",
+          "CollapsibleContent",
+          "CollapsibleTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "combobox",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/combobox.tsx",
+      "upstreamBlob": "0662e1c59fcf92a43554a5496d62a8517dedf9c2",
+      "react": {
+        "runtimeExports": [
+          "Combobox",
+          "ComboboxChip",
+          "ComboboxChips",
+          "ComboboxChipsInput",
+          "ComboboxCollection",
+          "ComboboxContent",
+          "ComboboxEmpty",
+          "ComboboxGroup",
+          "ComboboxInput",
+          "ComboboxItem",
+          "ComboboxLabel",
+          "ComboboxList",
+          "ComboboxSeparator",
+          "ComboboxTrigger",
+          "ComboboxValue",
+          "useComboboxAnchor"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "single and multiple controlled selection",
+        "object items and filtering",
+        "chips, clear button and keyboard navigation"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "command",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/command.tsx",
+      "upstreamBlob": "e076bcf497e46b6ae39628712b02f0915360ffa0",
+      "react": {
+        "runtimeExports": [
+          "Command",
+          "CommandDialog",
+          "CommandEmpty",
+          "CommandGroup",
+          "CommandInput",
+          "CommandItem",
+          "CommandList",
+          "CommandSeparator",
+          "CommandShortcut"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "context-menu",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/context-menu.tsx",
+      "upstreamBlob": "fddd712d91235f6af91e5cf6e2477e854b4316b9",
+      "react": {
+        "runtimeExports": [
+          "ContextMenu",
+          "ContextMenuCheckboxItem",
+          "ContextMenuContent",
+          "ContextMenuGroup",
+          "ContextMenuItem",
+          "ContextMenuLabel",
+          "ContextMenuPortal",
+          "ContextMenuRadioGroup",
+          "ContextMenuRadioItem",
+          "ContextMenuSeparator",
+          "ContextMenuShortcut",
+          "ContextMenuSub",
+          "ContextMenuSubContent",
+          "ContextMenuSubTrigger",
+          "ContextMenuTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "data-table",
+      "origin": "documentation-composition",
+      "upstreamSource": null,
+      "documentation": "https://ui.shadcn.com/docs/components/radix/data-table",
+      "react": {
+        "runtimeExports": [
+          "DataTable"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "typed column composition",
+        "sorting, filtering, pagination and row selection",
+        "column visibility and controlled/server state"
+      ],
+      "verification": "Composition APIs are EnoughUI choices; the upstream guide does not define a drop-in public component module."
+    },
+    {
+      "id": "date-picker",
+      "origin": "documentation-composition",
+      "upstreamSource": null,
+      "documentation": "https://ui.shadcn.com/docs/components/radix/date-picker",
+      "react": {
+        "runtimeExports": [
+          "DatePicker"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "calendar/popover composition",
+        "single/range selection, controlled value, bounds and locale",
+        "keyboard focus restoration and accessible label"
+      ],
+      "verification": "Composition APIs are EnoughUI choices; the upstream guide does not define a drop-in public component module."
+    },
+    {
+      "id": "dialog",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/dialog.tsx",
+      "upstreamBlob": "d76134f9f0da9d428cb409b0a14594c245fd40d1",
+      "react": {
+        "runtimeExports": [
+          "Dialog",
+          "DialogClose",
+          "DialogContent",
+          "DialogDescription",
+          "DialogFooter",
+          "DialogHeader",
+          "DialogOverlay",
+          "DialogPortal",
+          "DialogTitle",
+          "DialogTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "focus trap and restoration, outside interaction and Escape",
+        "content and footer close-button controls"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "direction",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/direction.tsx",
+      "upstreamBlob": "22e165774bd595fbf41d0c45efef1cf996897983",
+      "react": {
+        "runtimeExports": [
+          "DirectionProvider",
+          "useDirection"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "context propagation to stateful primitives",
+        "dir and direction aliases"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "drawer",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/drawer.tsx",
+      "upstreamBlob": "dc3938fe0f12ea68099a72969f333fc5184bc312",
+      "react": {
+        "runtimeExports": [
+          "Drawer",
+          "DrawerClose",
+          "DrawerContent",
+          "DrawerDescription",
+          "DrawerFooter",
+          "DrawerHeader",
+          "DrawerOverlay",
+          "DrawerPortal",
+          "DrawerTitle",
+          "DrawerTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "direction on the root",
+        "swipe dismissal and snap points",
+        "focus containment and scroll lock"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "dropdown-menu",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/dropdown-menu.tsx",
+      "upstreamBlob": "4e7077741fb5bd5118251d1b0c8e3770054a3792",
+      "react": {
+        "runtimeExports": [
+          "DropdownMenu",
+          "DropdownMenuCheckboxItem",
+          "DropdownMenuContent",
+          "DropdownMenuGroup",
+          "DropdownMenuItem",
+          "DropdownMenuLabel",
+          "DropdownMenuPortal",
+          "DropdownMenuRadioGroup",
+          "DropdownMenuRadioItem",
+          "DropdownMenuSeparator",
+          "DropdownMenuShortcut",
+          "DropdownMenuSub",
+          "DropdownMenuSubContent",
+          "DropdownMenuSubTrigger",
+          "DropdownMenuTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "empty",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/empty.tsx",
+      "upstreamBlob": "6a49a9813c02e2ce2548402e1a63b05de550bace",
+      "react": {
+        "runtimeExports": [
+          "Empty",
+          "EmptyContent",
+          "EmptyDescription",
+          "EmptyHeader",
+          "EmptyMedia",
+          "EmptyTitle"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Empty",
+          "EmptyContent",
+          "EmptyDescription",
+          "EmptyHeader",
+          "EmptyMedia",
+          "EmptyTitle"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "field",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/field.tsx",
+      "upstreamBlob": "c927c173514fa52c6a073757bea01fef08dbb5b6",
+      "react": {
+        "runtimeExports": [
+          "Field",
+          "FieldContent",
+          "FieldDescription",
+          "FieldError",
+          "FieldGroup",
+          "FieldLabel",
+          "FieldLegend",
+          "FieldSeparator",
+          "FieldSet",
+          "FieldTitle"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Field",
+          "FieldContent",
+          "FieldDescription",
+          "FieldError",
+          "FieldGroup",
+          "FieldLabel",
+          "FieldLegend",
+          "FieldSeparator",
+          "FieldSet",
+          "FieldTitle"
+        ]
+      },
+      "requiredCapabilities": [
+        "horizontal, vertical and responsive orientation",
+        "label/control linkage, descriptions and deduplicated errors",
+        "nested choice-card layout"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "form",
+      "origin": "legacy-registry",
+      "upstreamSource": "apps/v4/registry/new-york-v4/ui/form.tsx",
+      "upstreamBlob": "c1c77ca6098eef2a4dc6ac8be6ec2ad3100c7237",
+      "react": {
+        "runtimeExports": [
+          "Form",
+          "FormField",
+          "FormItem",
+          "FormLabel",
+          "FormControl",
+          "FormDescription",
+          "FormMessage",
+          "useFormField"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "React Hook Form controller integration",
+        "generated label/control/description/error relationships",
+        "validation and accessibility state"
+      ],
+      "verification": "Composition APIs are EnoughUI choices; the upstream guide does not define a drop-in public component module."
+    },
+    {
+      "id": "hover-card",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/hover-card.tsx",
+      "upstreamBlob": "3a2de807addf5772d9e26683c32a876327ac4f7f",
+      "react": {
+        "runtimeExports": [
+          "HoverCard",
+          "HoverCardContent",
+          "HoverCardTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "input",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/input.tsx",
+      "upstreamBlob": "88c9083eeb3d0c5a79626af27da43b109a673d29",
+      "react": {
+        "runtimeExports": [
+          "Input"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Input"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "input-group",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/input-group.tsx",
+      "upstreamBlob": "9126487bf0c03a6aa1edce0e2b54b938722478ae",
+      "react": {
+        "runtimeExports": [
+          "InputGroup",
+          "InputGroupAddon",
+          "InputGroupButton",
+          "InputGroupInput",
+          "InputGroupText",
+          "InputGroupTextarea"
+        ],
+        "typeExports": [],
+        "requiredProps": {
+          "InputGroupButton": {
+            "variant": [
+              "default",
+              "secondary",
+              "destructive",
+              "outline",
+              "ghost",
+              "link"
+            ],
+            "size": [
+              "xs",
+              "sm",
+              "icon-xs",
+              "icon-sm"
+            ]
+          }
+        }
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "InputGroup",
+          "InputGroupAddon",
+          "InputGroupButton",
+          "InputGroupInput",
+          "InputGroupText",
+          "InputGroupTextarea"
+        ]
+      },
+      "requiredCapabilities": [
+        "addon positioning and click-to-focus",
+        "button variants and sizes",
+        "disabled and invalid controls"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "input-otp",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/input-otp.tsx",
+      "upstreamBlob": "9680970c7bfcf40588b8c69123b2d02a1e2699b6",
+      "react": {
+        "runtimeExports": [
+          "InputOTP",
+          "InputOTPGroup",
+          "InputOTPSeparator",
+          "InputOTPSlot"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "one semantic input with split visual slots",
+        "paste, focus, disabled and controlled values",
+        "accessible label and validation"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "item",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/item.tsx",
+      "upstreamBlob": "8b96560e6f6505a2346ee78801be3dba7bf67b40",
+      "react": {
+        "runtimeExports": [
+          "Item",
+          "ItemActions",
+          "ItemContent",
+          "ItemDescription",
+          "ItemFooter",
+          "ItemGroup",
+          "ItemHeader",
+          "ItemMedia",
+          "ItemSeparator",
+          "ItemTitle"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Item",
+          "ItemActions",
+          "ItemContent",
+          "ItemDescription",
+          "ItemFooter",
+          "ItemGroup",
+          "ItemHeader",
+          "ItemMedia",
+          "ItemSeparator",
+          "ItemTitle"
+        ]
+      },
+      "requiredCapabilities": [
+        "header/footer above/below content",
+        "size and variant compatibility",
+        "media and separator composition"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "kbd",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/kbd.tsx",
+      "upstreamBlob": "1fc8d9c188183e3df985d9a1f454ca692186790f",
+      "react": {
+        "runtimeExports": [
+          "Kbd",
+          "KbdGroup"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Kbd",
+          "KbdGroup"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "label",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/label.tsx",
+      "upstreamBlob": "c9bd65cb06550fbcd5953d94bb0a6bb37cf03f2e",
+      "react": {
+        "runtimeExports": [
+          "Label"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Label"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "marker",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/marker.tsx",
+      "upstreamBlob": "85ad0596ab2f9ef624c9aaee1b7195f4216f8d86",
+      "react": {
+        "runtimeExports": [
+          "Marker",
+          "MarkerContent",
+          "MarkerIcon",
+          "markerVariants"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Marker",
+          "MarkerContent",
+          "MarkerIcon"
+        ]
+      },
+      "requiredCapabilities": [
+        "read-receipt/separator composition",
+        "default/separator/border variants and icon/content parts"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "menubar",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/menubar.tsx",
+      "upstreamBlob": "3074897d043a4442dffe3d96464499773496575b",
+      "react": {
+        "runtimeExports": [
+          "Menubar",
+          "MenubarCheckboxItem",
+          "MenubarContent",
+          "MenubarGroup",
+          "MenubarItem",
+          "MenubarLabel",
+          "MenubarMenu",
+          "MenubarPortal",
+          "MenubarRadioGroup",
+          "MenubarRadioItem",
+          "MenubarSeparator",
+          "MenubarShortcut",
+          "MenubarSub",
+          "MenubarSubContent",
+          "MenubarSubTrigger",
+          "MenubarTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "roving keyboard focus",
+        "nested menus, radio and checkbox items",
+        "Escape focus restoration and disabled items"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "message",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/message.tsx",
+      "upstreamBlob": "ae7aef393f0714997c632fdac0755ce9d830f965",
+      "react": {
+        "runtimeExports": [
+          "Message",
+          "MessageAvatar",
+          "MessageContent",
+          "MessageFooter",
+          "MessageGroup",
+          "MessageHeader"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Message",
+          "MessageAvatar",
+          "MessageContent",
+          "MessageFooter",
+          "MessageGroup",
+          "MessageHeader"
+        ]
+      },
+      "requiredCapabilities": [
+        "start/end layout, avatar and content composition",
+        "header/footer and grouped messages"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "message-scroller",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/message-scroller.tsx",
+      "upstreamBlob": "6402bba539ef665fe267e023de6430f766dff138",
+      "react": {
+        "runtimeExports": [
+          "MessageScroller",
+          "MessageScrollerButton",
+          "MessageScrollerContent",
+          "MessageScrollerItem",
+          "MessageScrollerProvider",
+          "MessageScrollerViewport",
+          "useMessageScroller",
+          "useMessageScrollerScrollable",
+          "useMessageScrollerVisibility"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "following newly appended messages",
+        "respecting intentional scroll away from the end",
+        "scroll-to-start/end button and context hooks"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "native-select",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/native-select.tsx",
+      "upstreamBlob": "273a3bc8ea586d4d525c7d3da108c65810894e93",
+      "react": {
+        "runtimeExports": [
+          "NativeSelect",
+          "NativeSelectOptGroup",
+          "NativeSelectOption"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "NativeSelect",
+          "NativeSelectOptGroup",
+          "NativeSelectOption"
+        ]
+      },
+      "requiredCapabilities": [
+        "native form submission",
+        "options and optgroups",
+        "disabled, invalid and size states"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "navigation-menu",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/navigation-menu.tsx",
+      "upstreamBlob": "7d925d57b46fdf77bcce6d5a4448442c3ba45215",
+      "react": {
+        "runtimeExports": [
+          "NavigationMenu",
+          "NavigationMenuContent",
+          "NavigationMenuIndicator",
+          "NavigationMenuItem",
+          "NavigationMenuLink",
+          "NavigationMenuList",
+          "NavigationMenuTrigger",
+          "NavigationMenuViewport",
+          "navigationMenuTriggerStyle"
+        ],
+        "typeExports": [],
+        "requiredProps": {
+          "NavigationMenu": {
+            "viewport": [
+              "boolean"
+            ]
+          }
+        }
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "optional viewport and independent item popup placement",
+        "keyboard navigation and current-link semantics"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "pagination",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/pagination.tsx",
+      "upstreamBlob": "114877ed03a146a605393a49711baf660dd66acf",
+      "react": {
+        "runtimeExports": [
+          "Pagination",
+          "PaginationContent",
+          "PaginationEllipsis",
+          "PaginationItem",
+          "PaginationLink",
+          "PaginationNext",
+          "PaginationPrevious"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Pagination",
+          "PaginationContent",
+          "PaginationEllipsis",
+          "PaginationItem",
+          "PaginationLink",
+          "PaginationNext",
+          "PaginationPrevious"
+        ]
+      },
+      "requiredCapabilities": [
+        "current and unavailable page semantics",
+        "custom previous/next text and link sizing"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "popover",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/popover.tsx",
+      "upstreamBlob": "d8e539566cfafc43bb8b6441679b88e64e9387a2",
+      "react": {
+        "runtimeExports": [
+          "Popover",
+          "PopoverAnchor",
+          "PopoverContent",
+          "PopoverDescription",
+          "PopoverHeader",
+          "PopoverTitle",
+          "PopoverTrigger"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "progress",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/progress.tsx",
+      "upstreamBlob": "e53ba770fb79db26862ddaab7c51db2c0257af7d",
+      "react": {
+        "runtimeExports": [
+          "Progress"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Progress"
+        ]
+      },
+      "requiredCapabilities": [
+        "finite bounds and clamped values",
+        "determinate and indeterminate accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "questionnaire",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/questionnaire.tsx",
+      "upstreamBlob": "0781676567a5d8bbcac688f45032118bc57f448e",
+      "react": {
+        "runtimeExports": [
+          "Questionnaire",
+          "QuestionnaireActions",
+          "QuestionnaireChoice",
+          "QuestionnaireChoiceDescription",
+          "QuestionnaireChoices",
+          "QuestionnaireDescription",
+          "QuestionnaireError",
+          "QuestionnaireInput",
+          "QuestionnaireItem",
+          "QuestionnaireNext",
+          "QuestionnairePrevious",
+          "QuestionnaireProgress",
+          "QuestionnaireSkip",
+          "QuestionnaireSubmit",
+          "QuestionnaireTitle"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "ordered items and active item state",
+        "single/multiple/freeform answers and FormData",
+        "required-item validation, skip, previous/next and submit",
+        "shortcuts, defaults, reset and controlled navigation"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "radio-group",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/radio-group.tsx",
+      "upstreamBlob": "f99bd66182dda0ea6a4ba134a04e2ae6ae3c192d",
+      "react": {
+        "runtimeExports": [
+          "RadioGroup",
+          "RadioGroupItem"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "resizable",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/resizable.tsx",
+      "upstreamBlob": "76d7a0e2dc9e2ea70b7d01bc286f7cde64fbe6c8",
+      "react": {
+        "runtimeExports": [
+          "ResizableHandle",
+          "ResizablePanel",
+          "ResizablePanelGroup"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "scroll-area",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/scroll-area.tsx",
+      "upstreamBlob": "cd597c803b18b1335eb5a8cbc30e3a883c9f842f",
+      "react": {
+        "runtimeExports": [
+          "ScrollArea",
+          "ScrollBar"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "select",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/select.tsx",
+      "upstreamBlob": "df255a61c5308d47b41d7109fda2c264a53406aa",
+      "react": {
+        "runtimeExports": [
+          "Select",
+          "SelectContent",
+          "SelectGroup",
+          "SelectItem",
+          "SelectLabel",
+          "SelectScrollDownButton",
+          "SelectScrollUpButton",
+          "SelectSeparator",
+          "SelectTrigger",
+          "SelectValue"
+        ],
+        "typeExports": [],
+        "requiredProps": {
+          "SelectTrigger": {
+            "size": [
+              "default",
+              "sm"
+            ]
+          }
+        }
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "default and small trigger sizes",
+        "controlled/native form values, disabled items and keyboard selection",
+        "item-aligned and popper positioning"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "separator",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/separator.tsx",
+      "upstreamBlob": "c340a95405a9bfe6eb34c29c7018583db1b29d25",
+      "react": {
+        "runtimeExports": [
+          "Separator"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Separator"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "sheet",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/sheet.tsx",
+      "upstreamBlob": "d95a5ca396395b1252424301e5ccb9716a2b6a6a",
+      "react": {
+        "runtimeExports": [
+          "Sheet",
+          "SheetClose",
+          "SheetContent",
+          "SheetDescription",
+          "SheetFooter",
+          "SheetHeader",
+          "SheetTitle",
+          "SheetTrigger"
+        ],
+        "typeExports": [],
+        "requiredProps": {
+          "SheetContent": {
+            "showCloseButton": [
+              "boolean"
+            ],
+            "side": [
+              "top",
+              "right",
+              "bottom",
+              "left"
+            ]
+          }
+        }
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "side positioning and current showCloseButton control",
+        "focus containment, Escape dismissal and focus restoration"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "sidebar",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/sidebar.tsx",
+      "upstreamBlob": "caf389104e2d6e36b8a4cc72844718a3eb933b9e",
+      "react": {
+        "runtimeExports": [
+          "Sidebar",
+          "SidebarContent",
+          "SidebarFooter",
+          "SidebarGroup",
+          "SidebarGroupAction",
+          "SidebarGroupContent",
+          "SidebarGroupLabel",
+          "SidebarHeader",
+          "SidebarInput",
+          "SidebarInset",
+          "SidebarMenu",
+          "SidebarMenuAction",
+          "SidebarMenuBadge",
+          "SidebarMenuButton",
+          "SidebarMenuItem",
+          "SidebarMenuSkeleton",
+          "SidebarMenuSub",
+          "SidebarMenuSubButton",
+          "SidebarMenuSubItem",
+          "SidebarProvider",
+          "SidebarRail",
+          "SidebarSeparator",
+          "SidebarTrigger",
+          "useSidebar"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "controlled and uncontrolled state",
+        "mobile drawer and desktop collapsed/offcanvas/icon modes",
+        "toggle shortcut and persisted state",
+        "menu subitems, actions, badges, skeletons and tooltips"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "skeleton",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/skeleton.tsx",
+      "upstreamBlob": "0439455a951949f8a75be48fa2c8b8e9f3d8b0f2",
+      "react": {
+        "runtimeExports": [
+          "Skeleton"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Skeleton"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "slider",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/slider.tsx",
+      "upstreamBlob": "d94d3d8fca2e309caca599fca181720e8b6f2524",
+      "react": {
+        "runtimeExports": [
+          "Slider"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "sonner",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/sonner.tsx",
+      "upstreamBlob": "0c2e93ea32d47a346e4dd0d92b916d965c09d7e5",
+      "react": {
+        "runtimeExports": [
+          "Toaster"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "Sonner-compatible toast API, actions and promise states",
+        "theme/position and accessible live announcements"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "spinner",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/spinner.tsx",
+      "upstreamBlob": "2a91bf988618e87a3698133b0bd971a00ec3f61b",
+      "react": {
+        "runtimeExports": [
+          "Spinner"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Spinner"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "switch",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/switch.tsx",
+      "upstreamBlob": "8d43e624843da44ae2c3068fa244453282735ed8",
+      "react": {
+        "runtimeExports": [
+          "Switch"
+        ],
+        "typeExports": [],
+        "requiredProps": {
+          "Switch": {
+            "size": [
+              "default",
+              "sm"
+            ]
+          }
+        }
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "default and small sizes",
+        "LTR and RTL thumb positions inside the track",
+        "controlled/native form state and keyboard toggling"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "table",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/table.tsx",
+      "upstreamBlob": "160cf7aa14b8467a777eb2405053d2d968f641b9",
+      "react": {
+        "runtimeExports": [
+          "Table",
+          "TableBody",
+          "TableCaption",
+          "TableCell",
+          "TableFooter",
+          "TableHead",
+          "TableHeader",
+          "TableRow"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Table",
+          "TableBody",
+          "TableCaption",
+          "TableCell",
+          "TableFooter",
+          "TableHead",
+          "TableHeader",
+          "TableRow"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "tabs",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/tabs.tsx",
+      "upstreamBlob": "4276eb90d96b577f9f16547d6c9ea67d4b74b3ff",
+      "react": {
+        "runtimeExports": [
+          "Tabs",
+          "TabsContent",
+          "TabsList",
+          "TabsTrigger",
+          "tabsListVariants"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "horizontal and vertical layout",
+        "default and line list variants",
+        "automatic/manual keyboard activation"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "textarea",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/textarea.tsx",
+      "upstreamBlob": "8b8d3f1c6cc7c66c2fab2e050164f355a655b6c9",
+      "react": {
+        "runtimeExports": [
+          "Textarea"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Textarea"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "toast",
+      "origin": "legacy-documentation",
+      "upstreamSource": null,
+      "documentation": "https://ui.shadcn.com/docs/components/radix/toast",
+      "react": {
+        "runtimeExports": [
+          "ToastProvider",
+          "ToastViewport",
+          "Toast",
+          "ToastTitle",
+          "ToastDescription",
+          "ToastClose",
+          "ToastAction"
+        ],
+        "typeExports": [
+          "ToastProps",
+          "ToastActionElement"
+        ]
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "Composition APIs are EnoughUI choices; the upstream guide does not define a drop-in public component module."
+    },
+    {
+      "id": "toggle",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/toggle.tsx",
+      "upstreamBlob": "37c743fa89e480f2cd7b7801cf1ae12db619e834",
+      "react": {
+        "runtimeExports": [
+          "Toggle",
+          "toggleVariants"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "toggle-group",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/toggle-group.tsx",
+      "upstreamBlob": "7d892c5b6faf6e98f6e3231ae0ab1e7d40238abb",
+      "react": {
+        "runtimeExports": [
+          "ToggleGroup",
+          "ToggleGroupItem"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "tooltip",
+      "origin": "radix-registry",
+      "upstreamSource": "apps/v4/registry/bases/radix/ui/tooltip.tsx",
+      "upstreamBlob": "2b6c4e049259e7318d52e85e93e8079304fb67b5",
+      "react": {
+        "runtimeExports": [
+          "Tooltip",
+          "TooltipContent",
+          "TooltipProvider",
+          "TooltipTrigger"
+        ],
+        "typeExports": [],
+        "requiredProps": {
+          "TooltipProvider": {
+            "delayDuration": [
+              "number"
+            ]
+          }
+        }
+      },
+      "astro": {
+        "mode": "react-island",
+        "requiredComponents": []
+      },
+      "requiredCapabilities": [
+        "immediate provider default and configurable delay",
+        "portal placement outside transformed/clipped containers",
+        "keyboard focus and hover behavior"
+      ],
+      "verification": "API coverage is automated; behavior and visual equivalence require renderer and browser tests."
+    },
+    {
+      "id": "typography",
+      "origin": "documentation-composition",
+      "upstreamSource": null,
+      "documentation": "https://ui.shadcn.com/docs/components/radix/typography",
+      "react": {
+        "runtimeExports": [
+          "Typography",
+          "TypographyH1",
+          "TypographyH2",
+          "TypographyH3",
+          "TypographyH4",
+          "TypographyP",
+          "TypographyBlockquote",
+          "TypographyList",
+          "TypographyInlineCode",
+          "TypographyLead",
+          "TypographyLarge",
+          "TypographySmall",
+          "TypographyMuted"
+        ],
+        "typeExports": []
+      },
+      "astro": {
+        "mode": "native",
+        "requiredComponents": [
+          "Typography",
+          "TypographyH1",
+          "TypographyH2",
+          "TypographyH3",
+          "TypographyH4",
+          "TypographyP",
+          "TypographyBlockquote",
+          "TypographyList",
+          "TypographyInlineCode",
+          "TypographyLead",
+          "TypographyLarge",
+          "TypographySmall",
+          "TypographyMuted"
+        ]
+      },
+      "requiredCapabilities": [
+        "documented composition, native attributes and accessibility"
+      ],
+      "verification": "Composition APIs are EnoughUI choices; the upstream guide does not define a drop-in public component module."
+    }
+  ]
+}

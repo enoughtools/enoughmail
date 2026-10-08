@@ -1,0 +1,12 @@
+interface Storage {sql:{exec<T=Record<string,unknown>>(query:string,...bindings:unknown[]):Iterable<T>}}
+interface Namespace {idFromName(id:string):unknown;get(id:unknown):{fetch(request:Request):Promise<Response>}}
+/** Durable hints contain only registry IDs and revisions, never mail content. */
+export class MailPushWakeups {
+ private flushing:Promise<void>|undefined;
+ constructor(private storage:Storage,private registry?:Namespace){storage.sql.exec('CREATE TABLE IF NOT EXISTS mail_push_watchers(id TEXT PRIMARY KEY,expires INTEGER NOT NULL,pending INTEGER NOT NULL DEFAULT 0,next_attempt INTEGER NOT NULL DEFAULT 0)');}
+ watch(id:string,expires:number){this.storage.sql.exec('DELETE FROM mail_push_watchers WHERE expires<=?',Date.now());if([...this.storage.sql.exec('SELECT id FROM mail_push_watchers')].length>=100&&!Array.from(this.storage.sql.exec('SELECT id FROM mail_push_watchers WHERE id=?',id)).length)throw new Error('Push watcher quota reached');this.storage.sql.exec('INSERT INTO mail_push_watchers(id,expires) VALUES(?,?) ON CONFLICT(id) DO UPDATE SET expires=excluded.expires',id,expires);}
+ mark(revision:number){this.storage.sql.exec('UPDATE mail_push_watchers SET pending=?,next_attempt=0 WHERE expires>?',revision+1,Date.now());}
+ next():number|undefined {return [...this.storage.sql.exec<{deadline:number|null}>('SELECT min(next_attempt) AS deadline FROM mail_push_watchers WHERE pending>0 AND expires>?',Date.now())][0]?.deadline??undefined;}
+ flush():Promise<void>{if(this.flushing)return this.flushing;this.flushing=this.deliver().finally(()=>{this.flushing=undefined;});return this.flushing;}
+ private async deliver(){if(!this.registry)return;this.storage.sql.exec('DELETE FROM mail_push_watchers WHERE expires<=?',Date.now());for(const item of this.storage.sql.exec<{id:string;pending:number}>('SELECT id,pending FROM mail_push_watchers WHERE pending>0 AND next_attempt<=?',Date.now())){this.storage.sql.exec('UPDATE mail_push_watchers SET next_attempt=? WHERE id=?',Date.now()+60000,item.id);try{const response=await this.registry.get(this.registry.idFromName(item.id)).fetch(new Request('https://mail-push.internal/wake',{method:'POST'}));await response.body?.cancel();if(response.ok)this.storage.sql.exec('UPDATE mail_push_watchers SET pending=0 WHERE id=? AND pending=?',item.id,item.pending);}catch{/* The durable pending hint is retried by the account alarm. */}}}
+}

@@ -1,0 +1,22 @@
+{
+  "name": "@open-cloud/mail",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@open-cloud/auth": "*",
+    "@open-cloud/client": "*",
+    "@open-cloud/contracts": "*",
+    "@open-cloud/mcp": "*",
+    "@open-cloud/ui": "*",
+    "@open-cloud/worker": "*",
+    "@rebnz/enough-ui": "*",
+    "lucide-react": "^1.52.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}

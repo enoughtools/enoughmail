@@ -1,0 +1,19 @@
+{
+  "name": "@open-cloud/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css",
+    "./brand.css": "./src/brand.css"
+  },
+  "dependencies": {
+    "@open-cloud/contracts": "*",
+    "@rebnz/enough-ui": "*"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}

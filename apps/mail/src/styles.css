@@ -1,0 +1,47 @@
+@import '@open-cloud/ui/styles.css';
+
+/* Shared page layout only. EnoughUI owns controls and interaction states. */
+.mail-standalone { height:100dvh; }
+.mail-app { display:flex; height:100%; min-height:0; overflow:hidden; color:var(--color-text-main); background:var(--color-paper); font-family:var(--font-sans); }
+.oc-main > .mail-app { height:100%; }
+.mail-app *, .mail-app *::before, .mail-app *::after { box-sizing:border-box; }
+.mail-content { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; }
+.mail-wordmark { display:inline-flex; align-items:center; gap:9px; color:var(--color-text-main); font-family:var(--font-sans); font-size:23px; line-height:1; letter-spacing:-.7px; white-space:nowrap; text-decoration:none; }
+.mail-wordmark img { display:block; flex-shrink:0; }
+.mail-wordmark strong { font-weight:600; }
+.mail-brand-descriptor { margin-left:5px; font-weight:400; }
+.mail-app > :is(.mail-settings,.mail-compose,.mail-overlay) { flex:1; min-width:0; min-height:0; height:100%; overflow:auto; }
+.mail-overlay { padding:28px; }
+.mail-dialog { max-width:760px; margin:auto; }
+.mail-dialog h2 { margin:0 0 24px; font-size:26px; }
+.mail-dialog kbd { margin-left:auto; }
+.mail-settings-header,.mail-compose-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.mail-settings-field,.mail-field { display:grid; gap:8px; margin:16px 0; min-width:0; }
+.mail-settings-check,.mail-check { display:flex; align-items:center; gap:8px; margin:12px 0; }
+.mail-form,.mail-settings-form { display:grid; gap:12px; }
+.mail-settings ul { list-style:none; padding:0; }
+.mail-settings table { width:100%; border-collapse:collapse; }
+.mail-settings :is(td,th) { text-align:left; padding:8px; border-bottom:1px solid var(--color-hairline); overflow-wrap:anywhere; }
+.mail-alert,.mail-notice { display:flex; align-items:flex-start; gap:12px; margin:12px 0; padding:12px; overflow-wrap:anywhere; }
+.mail-alert { color:var(--color-warn); background:var(--color-hover); }
+.mail-notice { background:var(--color-hover); }
+.mail-dns-plan { white-space:pre-wrap; overflow-wrap:anywhere; }
+.mail-start { min-height:100dvh; padding:28px 6vw; }
+.mail-start-identity { display:flex; justify-content:flex-end; gap:16px; font-size:13px; }
+.mail-start-card { max-width:560px; margin:8vh auto; }
+.mail-start-card .mail-wordmark { margin-bottom:40px; }
+.mail-start-card h2 { font:400 36px/1.2 var(--font-serif); margin:0 0 16px; }
+.mail-start-card p { line-height:1.6; color:var(--color-text-3); }
+.mail-start-card form { display:grid; gap:20px; margin-top:28px; }
+.mail-start-card label { display:grid; gap:8px; }
+.mail-start-card form > [data-slot=button] { justify-self:start; }
+.mail-start-error { color:var(--color-warn); }
+.mail-signed-in { overflow-wrap:anywhere; }
+.mail-link-address { display:block; overflow-wrap:anywhere; }
+.mail-client-access :is(code,pre) { white-space:pre-wrap; overflow-wrap:anywhere; }
+@media(max-width:650px) {
+ .mail-wordmark { font-size:21px; }
+ .mail-start { padding:20px; }
+ .mail-start-card { margin:6vh auto; }
+ .mail-overlay { padding:16px; }
+}

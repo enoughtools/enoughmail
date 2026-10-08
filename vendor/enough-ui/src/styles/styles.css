@@ -1,0 +1,183 @@
+@import "tailwindcss" source(none);
+@import "./spinner.css" layer(components);
+@source "../components";
+@source "../astro";
+@source "../lib";
+@plugin "tailwindcss-animate";
+
+html { scrollbar-gutter: stable; }
+
+@theme {
+  --color-ink: #12151c;
+  --color-ink-2: #1c202b;
+  --color-ink-border: #2a3040;
+  --color-paper: #f4f5f8;
+  --color-card: #fafbfc;
+  --color-surface: #ffffff;
+
+  --color-hairline: #dde1e8;
+  --color-hairline-soft: #eef0f4;
+  --color-border-mid: #c6ccd6;
+
+  --color-text-main: #12151c;
+  --color-text-2: #3d4553;
+  --color-text-3: #626b7a;
+  --color-text-4: #5e6778; /* hints and stamps; 4.9:1 on paper */
+  --color-line-soft: #8a93a2; /* the old text-4, kept for borders only */
+
+  --color-dark-text: #fafbfc;
+  --color-dark-text-2: #d5dae2;
+  --color-dark-text-3: #9aa3b2;
+
+  --color-accent: #3b4fe4;
+  --color-accent-soft: #eef0fb;
+  --color-accent-on-ink: #7d89f0;
+
+  /* Interaction surfaces stay quiet; accent is reserved for state and focus. */
+  --color-hover: color-mix(in srgb, var(--color-ink) 5%, var(--color-surface));
+  --color-hover-strong: color-mix(in srgb, var(--color-accent) 11%, var(--color-surface));
+  --color-active: color-mix(in srgb, var(--color-accent) 17%, var(--color-surface));
+
+  --color-ok: #1a7f37;
+  --color-ok-on-ink: #6fbf87;
+  --color-warn: #8a6508; /* limited / overlap; 4.9:1 on paper */
+
+  --font-serif: "Libre Caslon Text", Georgia, serif;
+  --font-sans: "Space Grotesk", "Helvetica Neue", sans-serif;
+  --font-mono: var(--font-sans); /* Compatibility alias: all UI uses proportional type. */
+
+  --shadow-card: 0 2px 16px rgba(18, 21, 28, 0.08);
+  --shadow-pop: 5px 5px 0 var(--color-accent);
+  --shadow-palette: 8px 8px 0 rgba(59, 79, 228, 0.9);
+
+  --radius-none: 0;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 4px);
+  --radius-3xl: calc(var(--radius) + 6px);
+  --radius: 0.5rem;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-in: in 0.2s ease-out;
+  --animate-out: out 0.2s ease-in;
+
+  @keyframes accordion-down {
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
+  }
+  @keyframes accordion-up {
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
+  }
+  @keyframes in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+}
+
+@keyframes drawer-sheet-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes drawer-sheet-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes drawer-sheet-content-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes drawer-sheet-content-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@layer components {
+  .drawer-sheet-overlay[data-state="open"] {
+    animation: drawer-sheet-overlay-in 180ms ease-out;
+  }
+
+  .drawer-sheet-overlay[data-state="closed"] {
+    animation: drawer-sheet-overlay-out 140ms ease-in;
+  }
+
+  .drawer-sheet-content[data-side="top"] {
+    --drawer-sheet-y: -100%;
+  }
+
+  .drawer-sheet-content[data-side="right"] {
+    --drawer-sheet-x: 100%;
+  }
+
+  .drawer-sheet-content[data-side="bottom"] {
+    --drawer-sheet-y: 100%;
+  }
+
+  .drawer-sheet-content[data-side="left"] {
+    --drawer-sheet-x: -100%;
+  }
+
+  .drawer-sheet-content[data-state="open"] {
+    animation: drawer-sheet-content-in 150ms ease-out;
+  }
+
+  .drawer-sheet-content[data-state="closed"] {
+    animation: drawer-sheet-content-out 150ms ease-in;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawer-sheet-overlay,
+    .drawer-sheet-content {
+      animation-duration: 1ms !important;
+    }
+
+    .drawer-sheet-content {
+      --drawer-sheet-x: 0 !important;
+      --drawer-sheet-y: 0 !important;
+    }
+  }
+}
+
+@layer base {
+  :root {
+    --background: var(--color-paper);
+    --foreground: var(--color-text-main);
+
+    --enough-ui-scrim: rgba(18, 21, 28, 0.35);
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  /* Code and keyboard hints follow the same proportional type as the UI. */
+  code, kbd, samp, pre { font-family: var(--font-sans); }
+
+  /* The design has essentially no motion; honour the preference for none at all. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
