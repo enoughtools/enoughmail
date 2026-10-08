@@ -154,3 +154,21 @@
 .mail-settings .mail-settings-tabs details>summary{cursor:pointer}
 .mail-settings .mail-rule-current-search{padding:14px;border-left:2px solid var(--color-accent);background:var(--color-hover)}
 .mail-settings .mail-rule-current-search p{font-size:12px;margin:6px 0 0;overflow-wrap:anywhere}
+
+/* Status text and disclosure each occupy their own row; actions never squeeze the copy. */
+.mail-settings .mail-domain-setup-progress{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px 20px}
+.mail-settings .mail-domain-setup-progress>p{min-width:0;grid-column:1}
+.mail-settings .mail-domain-setup-progress>details{grid-column:1/-1;grid-row:2;min-width:0}
+.mail-settings .mail-domain-setup-progress>button{grid-column:2;grid-row:1;align-self:start}
+.mail-settings .mail-settings-inbox-scope>label{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--color-text-3)}
+.mail-settings .mail-settings-inbox-scope [data-slot="native-select-container"]{width:min(100%,320px)}
+.mail-settings .mail-settings-inbox-scope select{font-size:14px;color:var(--color-text-main)}
+.mail-settings .mail-domain-assignment-note{display:flex;align-items:center;gap:20px;margin-bottom:24px;padding:16px;border:1px solid var(--color-hairline);background:var(--color-surface)}
+.mail-settings .mail-domain-assignment-note p{flex:1;margin:0;color:var(--color-text-3);font-size:13px}
+@media(max-width:640px){
+ .mail-settings .mail-domain-setup-progress{grid-template-columns:minmax(0,1fr)}
+ .mail-settings .mail-domain-setup-progress>button{grid-column:1;grid-row:auto;justify-self:start}
+ .mail-settings .mail-domain-setup-progress>details{grid-row:auto}
+ .mail-settings .mail-domain-assignment-note{align-items:flex-start;flex-direction:column;gap:12px}
+}
+.mail-settings .mail-domain-setup-review{max-width:none;margin-bottom:24px}

@@ -8,7 +8,7 @@ import './domain-setup-review.css';
 
 type Recovery = { id: string; status: string; createdAt: string; completed: string[]; proposal: DomainSetupProposal };
 type SetupResult = { status: 'review' | 'ready' | 'blocked' | 'pending'; message: string; newState: string; proposal?: DomainSetupProposal; recovery?: Recovery; recoveryId?: string };
-type Props = { client: MailClient; accountId: string; domainId: string; onComplete?: (result: SetupResult) => void; onCancel?: () => void };
+type Props = { client: MailClient; accountId: string; domainId: string; onComplete?: (result: SetupResult) => void; onCancel?: () => void; onBusy?: (busy: boolean) => void };
 
 function download(value: unknown, filename: string) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' }));
@@ -23,7 +23,7 @@ function RouteSummary({ rule, title }: { rule: DomainRoutingRule; title: string 
   return <div className="mail-setup-route"><h4>{title}</h4><p>{rule.enabled ? 'Enabled' : 'Disabled'}{rule.name ? ` · ${rule.name}` : ''}</p><dl><div><dt>Applies to</dt><dd>{rule.matchers.map(matcher => matcher.type === 'all' ? 'All incoming addresses' : matcher.value || 'Recipient rule').join(', ')}</dd></div><div><dt>Delivery</dt><dd>{rule.actions.map(action => action.type === 'forward' ? `Forward to ${action.value?.join(', ') || 'a destination'}` : action.type === 'worker' ? `Worker: ${action.value?.join(', ') || 'configured Worker'}` : action.type === 'drop' ? 'Drop incoming mail' : action.type).join('; ')}</dd></div></dl></div>;
 }
 
-export default function DomainSetupReview({ client, accountId, domainId, onComplete, onCancel }: Props) {
+export default function DomainSetupReview({ client, accountId, domainId, onComplete, onCancel, onBusy }: Props) {
   const [review, setReview] = useState<SetupResult | null>(null);
   const [recovery, setRecovery] = useState<Recovery | null>(null);
   const [result, setResult] = useState<SetupResult | null>(null);
@@ -43,6 +43,7 @@ export default function DomainSetupReview({ client, accountId, domainId, onCompl
     }).catch(reason => { if (active) setError(reason instanceof Error ? reason.message : 'The domain could not be reviewed.'); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [client, accountId, domainId, refresh]);
+  useEffect(() => { onBusy?.(applying); return () => onBusy?.(false); }, [applying, onBusy]);
   const proposal = review?.proposal;
   const replacing = Boolean(proposal && (proposal.removeRecords.length || proposal.disableRules.length || proposal.previousCatchAll.enabled));
   async function apply() {
@@ -66,9 +67,9 @@ export default function DomainSetupReview({ client, accountId, domainId, onCompl
     {error && <div className="mail-setup-callout mail-setup-warning" role="alert"><p>{error}</p></div>}
     {recovery && <div className="mail-setup-backup"><div><strong>Previous setup backup</strong><p>Saved {new Date(recovery.createdAt).toLocaleString()} · {recovery.status}. Includes the original records and routes for manual recovery.</p></div><Button variant="outline" size="sm" disabled={applying} onClick={() => download(recovery, `${recovery.proposal.domain}-previous-mail-setup.json`)}>Download backup</Button></div>}
     {proposal && <>
-      <div className={`mail-setup-callout ${replacing ? 'mail-setup-warning' : ''}`}><strong>{replacing ? 'Existing mail delivery will be replaced' : 'Connect mail delivery'}</strong><p>{replacing ? 'Existing mail delivery will be replaced and may be interrupted while changes propagate. The records and routes shown below will be replaced or disabled before verification completes. Existing messages stay with their current provider.' : 'EnoughMail will add the required sending records and connect incoming mail. Only addresses you configure in this inbox will accept mail.'}</p></div>
+      <div className={`mail-setup-callout ${replacing ? 'mail-setup-warning' : ''}`}><strong>{replacing ? 'Existing mail delivery will be replaced' : 'Connect mail delivery'}</strong><p>{replacing ? 'Existing mail delivery will be replaced and may be interrupted while changes propagate. The records and routes shown below will be replaced or disabled before verification completes. Existing messages stay with their current provider.' : 'EnoughMail will add the required sending records and connect incoming mail. Assign email addresses to inboxes in Email addresses to accept mail.'}</p></div>
       <dl className="mail-setup-summary"><div><dt>DNS records to add</dt><dd>{proposal.plan.changes.filter(change => change.kind === 'create').length}</dd></div><div><dt>DNS records to update</dt><dd>{proposal.plan.changes.filter(change => change.kind === 'update').length}</dd></div><div><dt>DNS records to remove</dt><dd>{proposal.removeRecords.length}</dd></div><div><dt>Existing routes to disable</dt><dd>{proposal.disableRules.length}</dd></div></dl>
-      <p className="mail-setup-route-summary">Incoming mail will route to EnoughMail. Unconfigured addresses will be rejected unless you enable catch-all delivery for this inbox.</p>
+      <p className="mail-setup-route-summary">Incoming mail will route to EnoughMail. Unconfigured addresses will be rejected unless catch-all delivery is enabled.</p>
       {proposal.blockers.length > 0 && <div className="mail-setup-callout mail-setup-warning" role="alert"><strong>Resolve these issues before connecting</strong><ul>{proposal.blockers.map((blocker, index) => <li key={index}>{blocker}</li>)}</ul></div>}
       <details><summary>Review exact DNS changes</summary>
         {proposal.removeRecords.length > 0 && <><h4>Remove these existing records</h4><RecordList records={proposal.removeRecords} /></>}
