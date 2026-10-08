@@ -11,6 +11,6 @@
     "@open-cloud/contracts": "*"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20261003.1"
+    "@cloudflare/workers-types": "5.20261008.1"
   }
 }
