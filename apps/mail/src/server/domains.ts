@@ -4,6 +4,8 @@ export interface DnsRecordEvidence { content: string; rawLength: number; canonic
 export interface DomainDnsConflictDetail { type: string; name: string; required: DnsRecordEvidence; existing: (DnsRecordEvidence & { firstDifference: number })[] }
 export interface DomainDnsPlan {
   domain: string; snapshot: string; requirements: DnsRecord[];
+  /** Authenticated Cloudflare evidence: an active full zone flattens this apex CNAME. */
+  apexCnameFlattening?: true;
   changes: { kind: 'create' | 'update'; record: DnsRecord; previous?: DnsRecord }[];
   conflicts: string[]; warnings: string[]; conflictDetails?: DomainDnsConflictDetail[];
 }
@@ -23,7 +25,10 @@ const equal = (a: DnsRecord, b: DnsRecord) => a.type === b.type && nameOf(a.name
   (a.type !== 'MX' || a.priority === b.priority);
 const snapshotOf = (records: DnsRecord[]) => JSON.stringify(records.map(r => ({ id: r.id, type: r.type, name: nameOf(r.name), content: r.content,
   priority: r.priority, ttl: r.ttl, proxied: r.proxied, locked: r.locked })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
-export function planDomainDns(domain: string, existing: DnsRecord[], providerRequirements: DnsRecord[]): DomainDnsPlan {
+type DnsPlanningContext = Pick<DomainDnsPlan, 'apexCnameFlattening'>;
+type CloudflareZone = { name: string; type?: string; status?: string };
+const cloudflareDnsContext = (zone: CloudflareZone, records: DnsRecord[]): DnsPlanningContext => zone.type === 'full' && zone.status === 'active' && records.some(record => record.type === 'CNAME' && nameOf(record.name) === nameOf(zone.name)) ? { apexCnameFlattening: true } : {};
+export function planDomainDns(domain: string, existing: DnsRecord[], providerRequirements: DnsRecord[], context: DnsPlanningContext = {}): DomainDnsPlan {
   domain = nameOf(domain);
   if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain)) throw new Error('invalidDomain');
   let requirements: DnsRecord[] = providerRequirements.map(r => ({ ...r, name: r.name === '@' ? domain : nameOf(r.name), ttl: r.ttl ?? 1, proxied: false }));
@@ -46,13 +51,18 @@ export function planDomainDns(domain: string, existing: DnsRecord[], providerReq
   if (!requirements.some(r => r.type === 'MX') || !requirements.some(r => r.type === 'TXT' && /^v=spf1(?:\s|$)/i.test(txt(r.content))) || !requirements.some(r => r.name.includes('._domainkey.') && ['TXT', 'CNAME'].includes(r.type)))
     throw new Error('providerRequirementsIncomplete');
   if (!requirements.some(r => r.name === `_dmarc.${domain}`)) requirements.push({ type: 'TXT', name: `_dmarc.${domain}`, content: 'v=DMARC1; p=none', ttl: 1, proxied: false });
-  const plan: DomainDnsPlan = { domain, snapshot: snapshotOf(existing), requirements, changes: [], conflicts: [], warnings: [] };
+  const plan: DomainDnsPlan = { domain, snapshot: snapshotOf(existing), requirements, ...(context.apexCnameFlattening === true ? { apexCnameFlattening: true } : {}), changes: [], conflicts: [], warnings: [] };
+  if (plan.apexCnameFlattening) plan.warnings.push('The website’s domain record is preserved alongside the mail records.');
   for (const required of requirements) {
     const sameName = existing.filter(r => nameOf(r.name) === required.name);
+    // Cloudflare always flattens an authoritative zone-apex CNAME, so it can
+    // coexist with apex MX/TXT. Never extend this exception to a subdomain.
+    // https://developers.cloudflare.com/dns/cname-flattening/set-up-cname-flattening/
+    const cnameConflict = sameName.some(r => r.type === 'CNAME') && !(plan.apexCnameFlattening && required.name === domain && ['MX', 'TXT'].includes(required.type));
     if (required.type === 'MX' && sameName.some(r => r.type === 'MX' && !requirements.some(w => equal(r, w)))) {
       plan.conflicts.push(`Conflicting MX record at ${required.name}; existing records will not be replaced.`); continue;
     }
-    if (required.type === 'CNAME' && sameName.some(r => !equal(r, required)) || required.type !== 'CNAME' && sameName.some(r => r.type === 'CNAME')) {
+    if (required.type === 'CNAME' && sameName.some(r => !equal(r, required)) || required.type !== 'CNAME' && cnameConflict) {
       plan.conflicts.push(`Conflicting CNAME record at ${required.name}; existing records will not be replaced.`); continue;
     }
     if (required.type === 'TXT' && /^v=spf1(?:\s|$)/i.test(txt(required.content))) {
@@ -89,7 +99,7 @@ export function planDomainDns(domain: string, existing: DnsRecord[], providerReq
         if (!equal(record, previous) || previous.proxied) plan.changes.push({ kind: 'update', record, previous }); continue;
       }
     }
-    if (sameName.some(r => r.type === 'CNAME') || required.type === 'CNAME' && sameName.length ||
+    if (cnameConflict || required.type === 'CNAME' && sameName.length ||
       required.type === 'MX' && sameName.some(r => r.type === 'MX' && !requirements.some(w => equal(r, w))) ||
       required.name.includes('._domainkey.') && sameName.some(r => r.type === required.type)) {
       plan.conflicts.push(`Conflicting ${required.type} record at ${required.name}; existing records will not be replaced.`);
@@ -143,23 +153,26 @@ export async function listDomainDns(env: DomainEnvironment, zoneId: string, fetc
 export async function fetchDomainDnsPlan(env: DomainEnvironment, domain: string, zoneId: string, sendingSubdomainId: string, fetcher: typeof fetch = fetch): Promise<DomainDnsPlan> {
   if (!/^[a-zA-Z0-9_-]{1,128}$/.test(sendingSubdomainId)) throw new Error('invalidSendingSubdomainId');
   const path = scope(zoneId);
-  const zone = await api<{ name: string }>(env, path, fetcher);
+  const zone = await api<CloudflareZone>(env, path, fetcher);
   if (nameOf(zone.name) !== nameOf(domain)) throw new Error('zoneDomainMismatch');
   const routing = await api<DnsRecord[]>(env, `${path}/email/routing/dns`, fetcher);
   const sending = await api<DnsRecord[] | { records: DnsRecord[] }>(env, `${path}/email/sending/subdomains/${encodeURIComponent(sendingSubdomainId)}/dns`, fetcher);
   const sendingRecords = Array.isArray(sending) ? sending : sending.records;
   if (!Array.isArray(routing) || !Array.isArray(sendingRecords)) throw new Error('invalidProviderDnsResponse');
-  return planDomainDns(domain, await listDomainDns(env, zoneId, fetcher), [...routing, ...sendingRecords]);
+  const current = await listDomainDns(env, zoneId, fetcher);
+  return planDomainDns(domain, current, [...routing, ...sendingRecords], cloudflareDnsContext(zone, current));
 }
 /** Caller must enforce current workspace/resource/domain authority and idempotent command receipts. */
 export async function applyDomainDns(env: DomainEnvironment, zoneId: string, plan: DomainDnsPlan, fetcher: typeof fetch = fetch): Promise<{ applied: number; status: 'applied' | 'partial' | 'unknown'; error?: string; providerCodes?: number[]; providerStep?: RoutingSetupStep }> {
   if (plan.conflicts.length) throw new Error('dnsPlanHasConflicts');
-  const zone = await api<{ name: string }>(env, scope(zoneId), fetcher);
+  const zone = await api<CloudflareZone>(env, scope(zoneId), fetcher);
   if (nameOf(zone.name) !== plan.domain) throw new Error('zoneDomainMismatch');
   const current = await listDomainDns(env, zoneId, fetcher);
   if (snapshotOf(current) !== plan.snapshot) throw new Error('dnsPlanStale');
-  const recomputed = planDomainDns(plan.domain, current, plan.requirements);
-  if (JSON.stringify(recomputed.changes) !== JSON.stringify(plan.changes)) throw new Error('dnsPlanInvalid');
+  const context = cloudflareDnsContext(zone, current);
+  if ((plan.apexCnameFlattening === true) !== (context.apexCnameFlattening === true)) throw new Error('dnsPlanStale');
+  const recomputed = planDomainDns(plan.domain, current, plan.requirements, context);
+  if (recomputed.conflicts.length || JSON.stringify(recomputed.changes) !== JSON.stringify(plan.changes)) throw new Error('dnsPlanInvalid');
   if (plan.changes.some(change => change.previous?.locked)) throw new Error('dnsRecordProtected');
   let applied = 0;
   for (const change of plan.changes) {
@@ -170,7 +183,7 @@ export async function applyDomainDns(env: DomainEnvironment, zoneId: string, pla
   } return { applied, status: 'applied' };
 }
 export function verifyDomainDns(plan: DomainDnsPlan, current: DnsRecord[]): { ready: boolean; checks: { type: string; name: string; status: 'ready' | 'missing' | 'conflict' }[]; warnings: string[] } {
-  const verified = planDomainDns(plan.domain, current, plan.requirements);
+  const verified = planDomainDns(plan.domain, current, plan.requirements, plan);
   const checks = plan.requirements.map(r => ({ type: r.type, name: r.name,
     status: (verified.conflicts.some(c => c.includes(r.name)) ? 'conflict' : verified.changes.some(c => c.record.name === r.name && c.record.type === r.type) ? 'missing' : 'ready') as 'ready' | 'missing' | 'conflict' }));
   return { ready: !verified.changes.length && !verified.conflicts.length && !verified.warnings.some(w => w.includes('recursive')), checks, warnings: verified.warnings };
@@ -217,7 +230,7 @@ export async function verifyDomainDnsWithSpf(plan: DomainDnsPlan, current: DnsRe
   const spfChecks = await Promise.all(current.filter(r => r.type === 'TXT' && /^v=spf1(?:\s|$)/i.test(txt(r.content)) && plan.requirements.some(q => q.name === nameOf(r.name) && /^v=spf1(?:\s|$)/i.test(txt(q.content)))).map(async r => ({ name: r.name, ...await checkSpfBudget(r.name, r.content, lookup) })));
   const warnings = result.warnings.filter(w => !w.includes('recursive'));
   for (const check of spfChecks) if (!check.valid) warnings.push(`SPF verification at ${check.name}: ${check.error}`);
-  return { ...result, ready: result.checks.every(c => c.status === 'ready') && spfChecks.every(c => c.valid) && !planDomainDns(plan.domain, current, plan.requirements).conflicts.length, warnings, spfChecks };
+  return { ...result, ready: result.checks.every(c => c.status === 'ready') && spfChecks.every(c => c.valid) && !planDomainDns(plan.domain, current, plan.requirements, plan).conflicts.length, warnings, spfChecks };
 }
 
 /** Provider setup is retryable by domain name; no duplicate sending identity is created. */
@@ -334,7 +347,7 @@ export async function reviewDomainSetup(env: DomainEnvironment, domain: string, 
     if (/^v=spf1(?:\s|$)/i.test(txt(required.content))) return /^v=spf1(?:\s|$)/i.test(txt(record.content)) && original.conflicts.some(conflict => conflict.includes(required.name) && conflict.includes('SPF'));
     return required.name === `_dmarc.${nameOf(domain)}` && /^v=DMARC1(?:;|\s|$)/i.test(txt(record.content)) && original.conflicts.some(conflict => conflict.includes('DMARC'));
   })).sort((a, b) => (a.id || '').localeCompare(b.id || ''));
-  const plan = planDomainDns(domain, records.filter(record => !removeRecords.includes(record)), original.requirements);
+  const plan = planDomainDns(domain, records.filter(record => !removeRecords.includes(record)), original.requirements, original);
   const disableRules = routing.rules.filter(rule => rule.enabled && !ownsRule(rule, worker));
   const blockers = [...plan.conflicts];
   for (const record of [...removeRecords, ...plan.changes.flatMap(change => change.previous ? [change.previous] : [])].filter(record => record.locked)) blockers.push(`Cloudflare protects the ${record.type} record at ${record.name}. Review its Email Routing DNS settings before replacing or updating it.`);
