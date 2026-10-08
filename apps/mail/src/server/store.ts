@@ -203,6 +203,18 @@ export class SqliteMailStore {
     }
     return [...this.storage.sql.exec<{json:string}>(`SELECT e.json FROM mail_objects e JOIN mail_email_index i ON i.id=e.id WHERE ${terms.join(' AND ')} ORDER BY ${input.dueBefore===undefined?'i.received_at DESC':"min(COALESCE(i.snooze_at,1e300),COALESCE(i.followup_at,1e300)) ASC"},e.id ASC LIMIT ? OFFSET ?`,...bindings,Math.min(limit,1000),offset)].map(row=>JSON.parse(row.json));
   }
+  /** Thread membership needs only indexed IDs, never body-bearing Email JSON. */
+  readThreads(ids?:string[]|null): {threads:MailObject[];hasMore:boolean} {
+    if(ids!==undefined&&ids!==null&&(!Array.isArray(ids)||ids.length>1000||ids.some(id=>typeof id!=='string')))throw new Error('Invalid thread IDs');
+    // The correlated existence check keeps the thread index as the outer
+    // lookup. A reordered join can instead scan every email in the account.
+    const rows=[...this.storage.sql.exec<{id:string;thread_id:string;received_at:number}>(`SELECT i.id,i.thread_id,i.received_at FROM mail_email_index i WHERE ${ids?'i.thread_id IN (SELECT value FROM json_each(?)) AND ':''}EXISTS (SELECT 1 FROM mail_objects e WHERE e.type='Email' AND e.id=i.id) LIMIT 1001`,...(ids?[JSON.stringify(ids)]:[]))];
+    if(rows.length>1000)return {threads:[],hasMore:true};
+    // Sort only the bounded result; oversized threads need not sort all mail.
+    rows.sort((a,b)=>a.received_at-b.received_at||(a.id<b.id?-1:a.id>b.id?1:0));
+    const threads=new Map<string,MailObject>();for(const row of rows){if(!threads.has(row.thread_id))threads.set(row.thread_id,{id:row.thread_id,emailIds:[]});threads.get(row.thread_id)!.emailIds.push(row.id);}
+    return {threads:[...threads.values()],hasMore:false};
+  }
   liveThreadIds(ids:string[]):string[]{
     if(ids.length>1000)throw new Error('Too many threads');if(!ids.length)return [];
     return [...this.storage.sql.exec<{thread_id:string}>('SELECT DISTINCT thread_id FROM mail_email_index WHERE thread_id IN (SELECT value FROM json_each(?))',JSON.stringify(ids))].map(row=>row.thread_id);

@@ -1,5 +1,7 @@
 import {useMailConfirm} from './use-mail-confirm';
 import { MailViewCache } from './view-cache';
+import { MailConversationCache } from './conversation-cache';
+import { observeVisibleConversations } from './visible-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppControls, useModuleContext } from '@open-cloud/ui';
 import { Button } from '@rebnz/enough-ui/button';
@@ -80,6 +82,7 @@ export default function MailApp() {
  const {confirm,dialog:confirmationDialog}=useMailConfirm();
     const context = useModuleContext('mail');
     const client = useMemo(() => new MailClient(), []);
+    const conversations = useMemo(() => new MailConversationCache(client), [client]);
     const [session, setSession] = useState<MailSession | null>(null);
     const [accountName, setAccountName] = useState('Personal');
     const [creatingAccount, setCreatingAccount] = useState(false);
@@ -110,6 +113,7 @@ export default function MailApp() {
     const [thread, setThread] = useState<Email[]>([]);
     const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
     const readerElement = useRef<HTMLElement>(null);
+    const listElement = useRef<HTMLDivElement>(null);
     const [ruleQuery, setRuleQuery] = useState('');
     const [threadLoading, setThreadLoading] = useState(false);
     const [threadError, setThreadError] = useState('');
@@ -142,12 +146,21 @@ export default function MailApp() {
     const loadScope = useRef('');
     const cacheGeneration=useRef(0);
     const viewCache=useRef(new MailViewCache<{rows:Row[];more:boolean;position:number}>());
+    const conversationStates=useRef(new Map<string,string>());
+    const acknowledgedConversationStates=useRef(new Map<string,string>());
     const searchInput = useRef<HTMLInputElement>(null);
-    useEffect(()=>{client.onAuthorizationLost=()=>{setRows([]);setThread([]);setActive(null);setSelected(new Set());setCompose(null);setSettings(false);setOutbox(false);setSession(null);setRemoteImages(new Set());clearMailCaches();cacheGeneration.current++;viewCache.current.clear();clearOfflineSession();clearOfflineViews();};return()=>{client.onAuthorizationLost=undefined;};},[client]);
+    useEffect(()=>{client.onAuthorizationLost=()=>{setRows([]);setThread([]);setActive(null);setSelected(new Set());setCompose(null);setSettings(false);setOutbox(false);setSession(null);setRemoteImages(new Set());clearMailCaches();++readerRequest.current;conversations.clear();conversationStates.current.clear();acknowledgedConversationStates.current.clear();cacheGeneration.current++;viewCache.current.clear();clearOfflineSession();clearOfflineViews();};return()=>{client.onAuthorizationLost=undefined;};},[client]);
     useEffect(()=>{void registerMailOfflineShell().catch(()=>setNotice('Offline startup is unavailable in this browser; local draft recovery still works.'));},[]);
     function closePanels() { setMobileNavOpen(false); setSettings(false); setOutbox(false); setOfflineQueue(false); setRecoveryPicker(false); setPalette(false); setCommand(null); setCommandError(''); }
     function openSettings(section: 'Accounts' | 'Domains' | 'Preferences' | 'Mailboxes' | 'Templates' | 'Signatures' | 'Rules' | 'Notifications' = 'Domains') { closePanels(); setSettingsSection(section); setSettings(true); }
     const panelOpen = settings || outbox || offlineQueue || recoveryPicker || palette || !!command;
+    const conversationScope = session ? cacheScope(session) : '';
+    useEffect(() => () => conversations.clear(), [conversations]);
+    useEffect(() => { ++readerRequest.current; conversations.clear(); conversationStates.current.clear(); acknowledgedConversationStates.current.clear(); }, [conversations, conversationScope]);
+    useEffect(() => {
+        if (!session || !online || loading || compose || panelOpen || !listElement.current) { conversations.prefetch(conversationScope, []); return; }
+        return observeVisibleConversations(listElement.current, rows, targets => conversations.prefetch(conversationScope, targets));
+    }, [conversations, conversationScope, session, online, loading, compose, panelOpen, rows]);
     const accountIds = session ? Object.keys(session.accounts) : [];
     const currentAccount = account || accountIds[0] || '';
     const currentBoxes = boxes[currentAccount] || [];
@@ -164,7 +177,7 @@ export default function MailApp() {
         await work();
     }
     catch (e) {
-        if((e as {authorizationLost?:boolean}).authorizationLost){setRows([]);setThread([]);setActive(null);setSelected(new Set());setCompose(null);setSettings(false);setOutbox(false);setSession(null);setRemoteImages(new Set());clearMailCaches();cacheGeneration.current++;viewCache.current.clear();clearOfflineSession();clearOfflineViews();}
+        if((e as {authorizationLost?:boolean}).authorizationLost){setRows([]);setThread([]);setActive(null);setSelected(new Set());setCompose(null);setSettings(false);setOutbox(false);setSession(null);setRemoteImages(new Set());clearMailCaches();++readerRequest.current;conversations.clear();conversationStates.current.clear();acknowledgedConversationStates.current.clear();cacheGeneration.current++;viewCache.current.clear();clearOfflineSession();clearOfflineViews();}
         setError(e instanceof Error ? e.message : String(e));
     } };
     const fetchView = useCallback(async(accountId:string,targetView:string,targetSearch:string,scopeAccount:string,offset=0)=>{ const filter = mailboxViewFilter(targetView, boxes[accountId] || [], targetSearch, !scopeAccount, addressScope); const results = await client.readBatch([
@@ -172,12 +185,16 @@ export default function MailApp() {
             ['Email/get', { '#ids': { resultOf: 'query', name: 'Email/query', path: '/ids' }, properties: ['id','threadId','blobId','mailboxIds','keywords','from','to','cc','subject','receivedAt','preview','hasAttachment','size'] }, 'emails'],
             ['Mailbox/get', {}, 'mailboxes'],
         ], accountId);
-       return {accountId,mailboxes:results.mailboxes.list as Mailbox[],emails:(results.emails.list as Email[]).map(email=>({...email,accountId})),more:results.query.total > offset + results.query.ids.length}; },[client,boxes,addressScope,pageSize,sort,ascending]);
+       return {accountId,emailState:results.emails.state as string,mailboxes:results.mailboxes.list as Mailbox[],emails:(results.emails.list as Email[]).map(email=>({...email,accountId})),more:results.query.total > offset + results.query.ids.length}; },[client,boxes,addressScope,pageSize,sort,ascending]);
     const load = useCallback(async (offset = 0) => { if (!session || !Object.keys(session.accounts).length)
         return; const generation = ++request.current; const scope = JSON.stringify([account,view,search,addressScope,pageSize,sort,ascending]); const viewKey=cacheScope(session)+':'+scope;if(!offset && loadScope.current !== scope){loadScope.current=scope;const cached=viewCache.current.get(viewKey);setRows(cached?.rows||[]);setMore(cached?.more||false);setPosition(cached?.position||0);setSelected(new Set());setError('');} setLoading(true); try {
         const all = await Promise.all((account ? [account] : Object.keys(session.accounts)).map(async (accountId) => { return fetchView(accountId,view,search,account,offset); }));
         if (generation !== request.current)
             return;
+        for (const result of all) {
+            if (conversationStates.current.get(result.accountId) !== result.emailState && acknowledgedConversationStates.current.get(result.accountId) !== result.emailState) conversations.invalidate(result.accountId);
+            conversationStates.current.set(result.accountId, result.emailState);
+        }
         setBoxes(previous=>{const next={...previous};let changed=false;for(const result of all){if(JSON.stringify(previous[result.accountId])!==JSON.stringify(result.mailboxes)){next[result.accountId]=result.mailboxes;changed=true;}}return changed?next:previous;});
         setRows(previous => { const next = sortMailRows(offset ? [...previous, ...all.flatMap(a => a.emails)] : all.flatMap(a => a.emails), sort, ascending); const offlinePrefs=readOfflinePreferences(session);if(offlinePrefs.enabled)saveMailCache(cacheScope(session), next.slice(0,offlinePrefs.maxMessages));if(navigator.onLine&&offlinePrefs.enabled){saveOfflineSession(session,offlinePrefs.maxAgeHours);saveOfflineView(session,{boxes:Object.fromEntries(all.map(result=>[result.accountId,result.mailboxes])),identities,preferences,states:[...client.states]});}return next; });
         if(!offset)viewCache.current.set(viewKey,{rows:sortMailRows(all.flatMap(a=>a.emails),sort,ascending),more:all.some(a=>a.more),position:offset});
@@ -193,22 +210,22 @@ export default function MailApp() {
             setRows(sortMailRows(filtered, sort, ascending));
             setNotice('Showing recent cached mail. Reconnect to synchronize.');
         }
-        if((e as {authorizationLost?:boolean}).authorizationLost){setRows([]);setThread([]);setActive(null);setSelected(new Set());setCompose(null);setSettings(false);setOutbox(false);setSession(null);setRemoteImages(new Set());clearMailCaches();cacheGeneration.current++;viewCache.current.clear();clearOfflineSession();clearOfflineViews();}
+        if((e as {authorizationLost?:boolean}).authorizationLost){setRows([]);setThread([]);setActive(null);setSelected(new Set());setCompose(null);setSettings(false);setOutbox(false);setSession(null);setRemoteImages(new Set());clearMailCaches();++readerRequest.current;conversations.clear();conversationStates.current.clear();acknowledgedConversationStates.current.clear();cacheGeneration.current++;viewCache.current.clear();clearOfflineSession();clearOfflineViews();}
         if (generation === request.current)
             setError(e instanceof Error ? e.message : String(e));
     }
     finally {
         if (generation === request.current)
             setLoading(false);
-    } }, [session, account, boxes, view, search, sort, ascending, client, preferences, addressScope, pageSize,fetchView]);
-    useEffect(() => { let mounted = true; void client.discover().then(async (value) => { if (!Object.keys(value.accounts).length) { if (mounted) { clearOfflineSession(); clearOfflineViews(); clearMailCaches();cacheGeneration.current++;viewCache.current.clear(); setSession(value); setLoading(false); } return; } const entries = await Promise.all(Object.keys(value.accounts).map(async (id) => { const results = await client.readBatch([['Mailbox/get',{},'mailboxes'],['Identity/get',{},'identities'],['Settings/get',{},'preferences']],id); const mailboxes=results.mailboxes as GetResult<Mailbox>, ids=results.identities as GetResult<Identity>, prefs=results.preferences as {settings:Record<string,unknown>}; return { id, mailboxes: mailboxes.list, ids: ids.list, prefs: prefs.settings || {} }; })); if (!mounted)
+    } }, [session, account, boxes, view, search, sort, ascending, client, preferences, addressScope, pageSize,fetchView,conversations]);
+    useEffect(() => { let mounted = true; void client.discover().then(async (value) => { if (!Object.keys(value.accounts).length) { if (mounted) { clearOfflineSession(); clearOfflineViews(); clearMailCaches();++readerRequest.current;conversations.clear();conversationStates.current.clear();acknowledgedConversationStates.current.clear();cacheGeneration.current++;viewCache.current.clear(); setSession(value); setLoading(false); } return; } const entries = await Promise.all(Object.keys(value.accounts).map(async (id) => { const results = await client.readBatch([['Mailbox/get',{},'mailboxes'],['Identity/get',{},'identities'],['Settings/get',{},'preferences']],id); const mailboxes=results.mailboxes as GetResult<Mailbox>, ids=results.identities as GetResult<Identity>, prefs=results.preferences as {settings:Record<string,unknown>}; return { id, mailboxes: mailboxes.list, ids: ids.list, prefs: prefs.settings || {} }; })); if (!mounted)
         return; setBoxes(Object.fromEntries(entries.map(e => [e.id, e.mailboxes]))); setIdentities(Object.fromEntries(entries.map(e => [e.id, e.ids]))); setPreferences(Object.fromEntries(entries.map(e => [e.id, e.prefs])));const offlinePrefs=readOfflinePreferences(value);if(offlinePrefs.enabled)saveOfflineSession(value,offlinePrefs.maxAgeHours);if(offlinePrefs.enabled)saveOfflineView(value,{boxes:Object.fromEntries(entries.map(e=>[e.id,e.mailboxes])),identities:Object.fromEntries(entries.map(e=>[e.id,e.ids])),preferences:Object.fromEntries(entries.map(e=>[e.id,e.prefs])),states:[...client.states]});setSession(value); }).catch(e => { if (mounted) {
         if(canUseOfflineCopy(e)){setOnline(false);const cached=readOfflineSession();if(cached&&readOfflinePreferences(cached).enabled&&readOfflineSession(readOfflinePreferences(cached).maxAgeHours)){const metadata=readOfflineView(cached);client.session=cached;if(metadata){setBoxes(metadata.boxes);setIdentities(metadata.identities);setPreferences(metadata.preferences);client.states=new Map(metadata.states);}setRows(readMailCache(cacheScope(cached)) as Row[]);setSession(cached);setNotice(`Offline copy for ${cached.username}. This local copy expires within 24 hours of the last verified connection.`);setLoading(false);return;}setError('Your offline copy expired or is unavailable. Reconnect to verify access.');}else setError(e.message);
         setLoading(false);
     } }); return () => { mounted = false; request.current++; }; }, [client]);
     useEffect(() => { void load(); }, [load]);
     useEffect(()=>{
-      if(!session||loading||!online||compose||settings)return;
+      if(!session||loading||!online||compose||panelOpen||active)return;
       let cancelled=false;const epoch=cacheGeneration.current;const ids=Object.keys(session.accounts);
       const scopes=[...new Set([account,'',...ids])];
       const custom=[...new Set(Object.values(boxes).flat().filter(box=>!['inbox','drafts','sent'].includes(box.role||'')).map(box=>box.role||box.id))];
@@ -224,6 +241,8 @@ export default function MailApp() {
             const key=cacheScope(session)+':'+JSON.stringify([id,targetView,'',addressScope,pageSize,sort,ascending]);
             const cached=viewCache.current.get(key);
             if(cached){all.push(cached);continue;}
+            // Visible message bodies and explicit opens take priority over other folders.
+            while(conversations.isBusy()) { await new Promise(resolve=>window.setTimeout(resolve,150)); if(cancelled||epoch!==cacheGeneration.current||!navigator.onLine)return; }
             const value=await fetchView(id,targetView,'',scopeAccount);
             if(cancelled||epoch!==cacheGeneration.current)return;
             const result={rows:sortMailRows(value.emails,sort,ascending),more:value.more,position:0};
@@ -233,7 +252,7 @@ export default function MailApp() {
         }
       })().catch(()=>{/* Foreground loads report failures; speculative reads stay quiet. */});},250);
       return()=>{cancelled=true;window.clearTimeout(timer);};
-    },[session,loading,online,compose,settings,boxes,account,addressScope,pageSize,sort,ascending,fetchView]);
+    },[session,loading,online,compose,panelOpen,active,boxes,account,addressScope,pageSize,sort,ascending,fetchView,conversations]);
     useEffect(() => { const update = () => { setOnline(navigator.onLine); if (navigator.onLine && session)
         void client.discover().then(value=>{if(cacheScope(value)!==cacheScope(session))throw new Error('Mail admission changed. Refresh to load the current authorized accounts.');setSession(value);if(!offlineQueue)return replayMutations(cacheScope(value),client);}).then(() => load()).catch(e => setError(e.message)); }; window.addEventListener('online', update); window.addEventListener('offline', update); return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); }; }, [session, client, load,offlineQueue]);
     useEffect(() => { if (!session || session.eventSourceUrl && typeof EventSource !== 'undefined')
@@ -243,11 +262,11 @@ export default function MailApp() {
     const hintPaused=useRef(false);hintPaused.current=!!compose||settings||selected.size>0;
     const [pendingMailHint,setPendingMailHint]=useState(false);
     useEffect(()=>{if(!session||!Object.keys(session.accounts).length||!online||typeof EventSource==='undefined')return;let endpoint:string|null;try{endpoint=mailEventEndpoint(session);}catch(problem){setError(problem instanceof Error?problem.message:'Mail update stream unavailable.');return;}if(!endpoint)return;const stream=new EventSource(endpoint,{withCredentials:true});const states=new Map<string,string>();
-      const state=(event:Event)=>{const hint=mailStateHint((event as MessageEvent).data,session.accounts,states);if(hint.arrival)setNotice('New mail arrived.');if(hint.refresh){cacheGeneration.current++;viewCache.current.clear();if(hintPaused.current)setPendingMailHint(true);else void hintRefresh.current();}};
+      const state=(event:Event)=>{const previous=new Map(states);const hint=mailStateHint((event as MessageEvent).data,session.accounts,states);if(hint.arrival)setNotice('New mail arrived.');if(hint.refresh){for(const id of Object.keys(session.accounts)){const known=acknowledgedConversationStates.current.get(id);if(['Email','Thread'].some(type=>{const key=`${id}:${type}`,value=states.get(key);return value!==undefined&&value!==previous.get(key)&&value!==known;}))conversations.invalidate(id);}cacheGeneration.current++;viewCache.current.clear();if(hintPaused.current)setPendingMailHint(true);else void hintRefresh.current();}};
       stream.addEventListener('state',state);return()=>{stream.removeEventListener('state',state);stream.close();};
-    },[session,online]);
+    },[session,online,conversations]);
     useEffect(()=>{if(pendingMailHint&&!compose&&!settings&&!selected.size){setPendingMailHint(false);void load();}},[pendingMailHint,compose,settings,selected.size,load]);
-    useEffect(()=>{const timer=window.setInterval(()=>{if(!navigator.onLine&&session&&!readOfflineSession(readOfflinePreferences(session).maxAgeHours)){setRows([]);setThread([]);setActive(null);setSession(null);setCompose(null);setSettings(false);setOutbox(false);clearMailCaches();cacheGeneration.current++;viewCache.current.clear();clearOfflineViews();setError('Your offline copy expired. Reconnect to verify current access.');}},30000);return()=>window.clearInterval(timer);},[session]);
+    useEffect(()=>{const timer=window.setInterval(()=>{if(!navigator.onLine&&session&&!readOfflineSession(readOfflinePreferences(session).maxAgeHours)){setRows([]);setThread([]);setActive(null);setSession(null);setCompose(null);setSettings(false);setOutbox(false);clearMailCaches();++readerRequest.current;conversations.clear();conversationStates.current.clear();acknowledgedConversationStates.current.clear();cacheGeneration.current++;viewCache.current.clear();clearOfflineViews();setError('Your offline copy expired. Reconnect to verify current access.');}},30000);return()=>window.clearInterval(timer);},[session]);
     useEffect(() => {
         if (!notice) return;
         const notification = toast(notice, { duration: undo ? 10000 : 5000, ...(undo ? { action: { label: 'Undo', onClick: () => { void perform(async () => { await undo(); setUndo(null); setNotice('Change undone'); }); } } } : {}) });
@@ -267,6 +286,8 @@ export default function MailApp() {
         }
         const result = await client.call<SetResult>('Email/set', args, id);
         appliedStates.set(id, result.newState);
+        acknowledgedConversationStates.current.set(id, result.newState);
+        conversations.patch(conversationScope, id, Object.fromEntries(affected.filter(row=>row.accountId===id).map(row=>{const next=applyUiPatch(row,updates.get(rowKey(row))!);return [row.id,{keywords:next.keywords,mailboxIds:next.mailboxIds}];})));
     }
     setRows(previous => previous.map(row => updates.has(rowKey(row)) ? applyUiPatch(row, updates.get(rowKey(row))!) : row));
     // Keep the open conversation in sync with row actions as well as the list.
@@ -286,7 +307,10 @@ export default function MailApp() {
             await perform(async () => { const draft = await loadComposeEmail(client, row.accountId, row.id, true); if (generation !== readerRequest.current) return; setAccount(row.accountId); setCompose({ draft, accountId:row.accountId }); });
             return;
         }
-        setActive(row); setThread([]); setThreadLoading(true);
+        const cached = navigator.onLine ? conversations.get(conversationScope, row.accountId, row.threadId) : undefined;
+        const showConversation = (messages: Email[]) => { const conversation=sortMailConversation(messages);setThread(conversation);setExpandedMessages(new Set(conversation.length?[conversation[conversation.length-1].id]:[]));setThreadLoading(false); };
+        setActive(row); setThread(cached ? sortMailConversation(cached) : []); setThreadLoading(!cached);
+        if(cached)setExpandedMessages(new Set(cached.length?[sortMailConversation(cached).at(-1)!.id]:[]));
         if (!navigator.onLine) {
             const related = sortMailConversation(rows.filter(value => value.accountId === row.accountId && value.threadId === row.threadId)); setThread(related); setExpandedMessages(new Set(related.length ? [related[related.length - 1].id] : []));
             setThreadLoading(false);
@@ -294,15 +318,19 @@ export default function MailApp() {
             return;
         }
         try {
-            const results = await client.readBatch([
-                ['Thread/get',{ids:[row.threadId]},'thread'],
-                ['Email/get',{'#ids':{resultOf:'thread',name:'Thread/get',path:'/list/*/emailIds/*'},fetchAllBodyValues:true,maxBodyValueBytes:0},'emails'],
-            ],row.accountId);
-            const result=results.emails as GetResult<Email>;
+            let conversation=cached;
+            if(!conversation){
+                try { conversation=await conversations.load(conversationScope,row.accountId,row.threadId); }
+                catch(cause){
+                    if(generation!==readerRequest.current)return;
+                    if(!(cause as {conversationInvalidated?:boolean}).conversationInvalidated&&(cause as {errorType?:string}).errorType!=='tooManyObjects')throw cause;
+                    conversation=await conversations.load(conversationScope,row.accountId,row.threadId);
+                }
+            }
             if (generation !== readerRequest.current) return;
-            const conversation = sortMailConversation(result.list); setThreadLoading(false); setThread(conversation); setExpandedMessages(new Set(conversation.length ? [conversation[conversation.length - 1].id] : []));
+            showConversation(conversation);
             if (!row.keywords.$seen) {
-                try { await client.call('Email/set', { update: { [row.id]: { 'keywords/$seen': true } } }, row.accountId); }
+                try { const result=await client.call<SetResult>('Email/set', { update: { [row.id]: { 'keywords/$seen': true } } }, row.accountId);acknowledgedConversationStates.current.set(row.accountId,result.newState);conversations.patch(conversationScope,row.accountId,{[row.id]:{keywords:{...(conversation.find(email=>email.id===row.id)?.keywords||row.keywords),$seen:true}}}); }
                 catch (cause) { if (generation === readerRequest.current && !(cause as {authorizationLost?:boolean}).authorizationLost) setNotice('Message opened, but its read status could not be saved. Refresh to try again.'); return; }
                 if (generation !== readerRequest.current) return;
                 setRows(previous => previous.map(value => rowKey(value) === rowKey(row) ? { ...value, keywords: { ...value.keywords, $seen: true } } : value));
@@ -442,8 +470,8 @@ export default function MailApp() {
      <span className="mail-selection-count">{selected.size ? `${selected.size} selected` : ''}</span>
    </div>}
    <div className={`mail-panes ${active ? 'has-reader' : ''}`}>
-     <div className="mail-list" aria-label="Messages" aria-busy={loading}>
-       {loading && !rows.length ? <Empty role="status"><EmptyHeader><EmptyMedia><Spinner label="Loading messages" /></EmptyMedia><EmptyTitle>Loading your mail</EmptyTitle><EmptyDescription>Your messages will appear here in a moment.</EmptyDescription></EmptyHeader></Empty> : !rows.length ? <Empty><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>{error ? 'Mail couldn’t be loaded' : search ? 'No matching messages' : view === 'drafts' ? 'No drafts yet' : view === 'sent' ? 'No sent messages yet' : view === 'inbox' ? 'You’re all caught up' : `No ${folderNames[view]?.toLowerCase() || 'messages'} here`}</EmptyTitle><EmptyDescription>{error ? 'Try refreshing this view.' : search ? 'Try another name, address or phrase.' : view === 'drafts' ? 'Messages you start writing are saved here automatically.' : view === 'sent' ? 'Messages you send will appear here.' : view === 'inbox' ? 'New messages will appear here when they arrive.' : 'Messages matching this folder will appear here.'}</EmptyDescription></EmptyHeader><EmptyContent>{search ? <Button variant="outline" size="sm" onClick={() => {setSearch('');setQuery('');}}>Clear search</Button> : error ? <Button variant="outline" size="sm" onClick={() => void load()}>Refresh mail</Button> : ['drafts','sent'].includes(view) ? <Button variant="ghost" size="sm" onClick={openComposer}><FilePenLine />Write a message</Button> : null}</EmptyContent></Empty> : rows.map(row => <div className={`mail-row ${!row.keywords.$seen ? 'unread' : ''} ${selected.has(rowKey(row)) ? 'selected' : ''} ${active && rowKey(active) === rowKey(row) ? 'active' : ''}`} key={rowKey(row)}>
+     <div ref={listElement} className="mail-list" aria-label="Messages" aria-busy={loading}>
+       {loading && !rows.length ? <Empty role="status"><EmptyHeader><EmptyMedia><Spinner label="Loading messages" /></EmptyMedia><EmptyTitle>Loading your mail</EmptyTitle><EmptyDescription>Your messages will appear here in a moment.</EmptyDescription></EmptyHeader></Empty> : !rows.length ? <Empty><EmptyHeader><EmptyMedia variant="icon"><Inbox /></EmptyMedia><EmptyTitle>{error ? 'Mail couldn’t be loaded' : search ? 'No matching messages' : view === 'drafts' ? 'No drafts yet' : view === 'sent' ? 'No sent messages yet' : view === 'inbox' ? 'You’re all caught up' : `No ${folderNames[view]?.toLowerCase() || 'messages'} here`}</EmptyTitle><EmptyDescription>{error ? 'Try refreshing this view.' : search ? 'Try another name, address or phrase.' : view === 'drafts' ? 'Messages you start writing are saved here automatically.' : view === 'sent' ? 'Messages you send will appear here.' : view === 'inbox' ? 'New messages will appear here when they arrive.' : 'Messages matching this folder will appear here.'}</EmptyDescription></EmptyHeader><EmptyContent>{search ? <Button variant="outline" size="sm" onClick={() => {setSearch('');setQuery('');}}>Clear search</Button> : error ? <Button variant="outline" size="sm" onClick={() => void load()}>Refresh mail</Button> : ['drafts','sent'].includes(view) ? <Button variant="ghost" size="sm" onClick={openComposer}><FilePenLine />Write a message</Button> : null}</EmptyContent></Empty> : rows.map(row => <div className={`mail-row ${!row.keywords.$seen ? 'unread' : ''} ${selected.has(rowKey(row)) ? 'selected' : ''} ${active && rowKey(active) === rowKey(row) ? 'active' : ''}`} key={rowKey(row)} data-mail-row-key={rowKey(row)}>
          <Checkbox aria-label={`Select ${row.subject || 'untitled message'}`} checked={selected.has(rowKey(row))} onCheckedChange={value => setSelected(previous => {const next = new Set(previous);value === true ? next.add(rowKey(row)) : next.delete(rowKey(row));return next;})} />
          <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon-xs" aria-label={row.keywords.$flagged ? 'Remove star' : 'Star message'} aria-pressed={!!row.keywords.$flagged} onClick={() => void perform(() => updateRows(() => ({'keywords/$flagged': row.keywords.$flagged ? null : true}),[row]))}><Star fill={row.keywords.$flagged ? 'currentColor' : 'none'} /></Button></TooltipTrigger><TooltipContent>{row.keywords.$flagged ? 'Remove star' : 'Star message'}</TooltipContent></Tooltip>
          <span className="mail-row-unread" aria-label={row.keywords.$seen ? 'Read' : 'Unread'}>{!row.keywords.$seen && <span />}</span>
@@ -479,7 +507,8 @@ export default function MailApp() {
      </article>}
    </div>
  </section>}
- {compose && session && <Compose key={`${composeAccount}:${compose.recoveryId||compose.draft?.id || compose.reply?.id || 'new'}`} client={client} accountId={composeAccount} mailboxes={boxes[composeAccount]||[]} identities={identities[composeAccount] || []} undoSeconds={Number(preferences[composeAccount]?.undoSeconds??10)} suggestedContacts={rows.filter(row=>row.accountId===composeAccount).flatMap(row=>[...(row.from||[]),...(row.to||[]),...(row.cc||[])])} {...compose} docked onSetupDomain={() => openSettings('Domains')} onManageTemplates={() => openSettings('Templates')} onManageSignatures={() => openSettings('Signatures')} onClose={() => setCompose(null)} onSaved={() => void load()} onSubmitted={(id, draftId) => {
+ {compose && session && <Compose key={`${composeAccount}:${compose.recoveryId||compose.draft?.id || compose.reply?.id || 'new'}`} client={client} accountId={composeAccount} mailboxes={boxes[composeAccount]||[]} identities={identities[composeAccount] || []} undoSeconds={Number(preferences[composeAccount]?.undoSeconds??10)} suggestedContacts={rows.filter(row=>row.accountId===composeAccount).flatMap(row=>[...(row.from||[]),...(row.to||[]),...(row.cc||[])])} {...compose} docked onSetupDomain={() => openSettings('Domains')} onManageTemplates={() => openSettings('Templates')} onManageSignatures={() => openSettings('Signatures')} onClose={() => setCompose(null)} onSaved={() => {conversations.invalidate(composeAccount);void load();}} onSubmitted={(id, draftId) => {
+     conversations.invalidate(composeAccount);
      const submissionAccount = composeAccount;
      const cancellationOperation = crypto.randomUUID();
      let attempted = false;

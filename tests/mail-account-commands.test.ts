@@ -9,9 +9,10 @@ const databases: DatabaseSync[]=[];
 afterEach(()=>{vi.unstubAllGlobals();for(const db of databases.splice(0))db.close();});
 function fixture(){
   const db=new DatabaseSync(':memory:');databases.push(db);let nesting=0;let fault=false;
+  const activity={writes:0,alarms:0,blobReads:[] as string[],reset(){this.writes=0;this.alarms=0;this.blobReads=[];}};
   const blobs=new Map<string,Uint8Array>();
-  const storage={sql:{exec<T>(sql:string,...bindings:unknown[]):Iterable<T>{if(fault&&sql.startsWith('INSERT INTO mail_objects'))throw new Error('Injected failure');const statement=db.prepare(sql);return (statement.columns().length?statement.all(...bindings as any[]):[statement.run(...bindings as any[])]) as T[];}},transactionSync<T>(task:()=>T):T{const save=`save_${++nesting}`;db.exec(`SAVEPOINT ${save}`);try{const result=task();db.exec(`RELEASE ${save}`);return result;}catch(error){db.exec(`ROLLBACK TO ${save}; RELEASE ${save}`);throw error;}},async setAlarm(_time:number){},async deleteAlarm(){}};
-  const bucket:MailAccountEnvironment['MAIL_BLOBS'] & {list(input:{prefix:string;limit:number}):Promise<{objects:{key:string}[]}>}={async put(key:string,value:any){blobs.set(key,value instanceof ReadableStream?new Uint8Array(await new Response(value).arrayBuffer()):new Uint8Array(value));},async get(key:string,options?:{range?:{offset:number;length:number}}){const value=blobs.get(key);const part=value&&(options?.range?value.slice(options.range.offset,options.range.offset+options.range.length):value);return part?{size:value!.length,body:new Response(part.slice()).body!,async arrayBuffer(){return part.slice().buffer;}}:null;},async delete(key:string){blobs.delete(key);},async list(input:{prefix:string;limit:number}){return {objects:Array.from(blobs.keys()).filter(key=>key.startsWith(input.prefix)).slice(0,input.limit).map(key=>({key}))};}};
+  const storage={sql:{exec<T>(sql:string,...bindings:unknown[]):Iterable<T>{if(fault&&sql.startsWith('INSERT INTO mail_objects'))throw new Error('Injected failure');if(/^(INSERT|DELETE|UPDATE)/.test(sql))activity.writes++;const statement=db.prepare(sql);return (statement.columns().length?statement.all(...bindings as any[]):[statement.run(...bindings as any[])]) as T[];}},transactionSync<T>(task:()=>T):T{const save=`save_${++nesting}`;db.exec(`SAVEPOINT ${save}`);try{const result=task();db.exec(`RELEASE ${save}`);return result;}catch(error){db.exec(`ROLLBACK TO ${save}; RELEASE ${save}`);throw error;}},async setAlarm(_time:number){activity.alarms++;},async deleteAlarm(){activity.alarms++;}};
+  const bucket:MailAccountEnvironment['MAIL_BLOBS'] & {list(input:{prefix:string;limit:number}):Promise<{objects:{key:string}[]}>}={async put(key:string,value:any){blobs.set(key,value instanceof ReadableStream?new Uint8Array(await new Response(value).arrayBuffer()):new Uint8Array(value));},async get(key:string,options?:{range?:{offset:number;length:number}}){activity.blobReads.push(key);const value=blobs.get(key);const part=value&&(options?.range?value.slice(options.range.offset,options.range.offset+options.range.length):value);return part?{size:value!.length,body:new Response(part.slice()).body!,async arrayBuffer(){return part.slice().buffer;}}:null;},async delete(key:string){blobs.delete(key);},async list(input:{prefix:string;limit:number}){return {objects:Array.from(blobs.keys()).filter(key=>key.startsWith(input.prefix)).slice(0,input.limit).map(key=>({key}))};}};
   const env:MailAccountEnvironment={MAIL_BLOBS:bucket};
   const context={authorityProof:{actions:['mail.read','mail.organize','mail.draft','mail.manage','mail.send'],lease:'fixture-proof',jobId:crypto.randomUUID(),expiresAt:Date.now()+90*86400000},accountId:'account',organizationId:'org',workspaceId:'workspace',actor:{id:'actor',actions:['mail.read','mail.organize','mail.draft','mail.manage','mail.send']}};
   let account=new MailAccount({storage},env);
@@ -19,8 +20,42 @@ function fixture(){
   async function raw(id:string,text:string){blobs.set(`account/blobs/${id}`,new TextEncoder().encode(text));return id;}
   async function eventResponse(types:readonly string[],actions=context.actor.actions){return account.fetch(new Request('https://account/event-state',{method:'POST',headers:{'x-mail-account-context':JSON.stringify({...context,actor:{...context.actor,actions}})},body:JSON.stringify({types})}));}
   async function eventState(){return (await (await eventResponse(['EmailDelivery'])).json() as any).states.EmailDelivery;}
-  return {db,blobs,env,context,call,raw,eventState,eventResponse,async wait(after:string,actions=context.actor.actions){return account.fetch(new Request('https://account/event-wait',{method:'POST',headers:{'x-mail-account-context':JSON.stringify({...context,actor:{...context.actor,actions}})},body:JSON.stringify({after})}));},async ingest(blobId:string,to:string){return account.fetch(new Request('https://account/ingest',{method:'POST',headers:{'x-mail-account-context':JSON.stringify({...context,actor:{...context.actor,actions:['mail.ingest']}})},body:JSON.stringify({blobId,to,from:'sender@source.test'})}));},crashAfterClean(){(account as any).processPendingAutomations=async()=>{throw new Error('Injected crash after clean commit');};},alarm:()=>account.alarm(),restart(){account=new MailAccount({storage},env);},fail(value:boolean){fault=value;}};
+  return {db,blobs,env,context,call,raw,activity,eventState,eventResponse,async wait(after:string,actions=context.actor.actions){return account.fetch(new Request('https://account/event-wait',{method:'POST',headers:{'x-mail-account-context':JSON.stringify({...context,actor:{...context.actor,actions}})},body:JSON.stringify({after})}));},async ingest(blobId:string,to:string){return account.fetch(new Request('https://account/ingest',{method:'POST',headers:{'x-mail-account-context':JSON.stringify({...context,actor:{...context.actor,actions:['mail.ingest']}})},body:JSON.stringify({blobId,to,from:'sender@source.test'})}));},crashAfterClean(){(account as any).processPendingAutomations=async()=>{throw new Error('Injected crash after clean commit');};},alarm:()=>account.alarm(),restart(){account=new MailAccount({storage},env);},fail(value:boolean){fault=value;}};
 }
+
+it('opens conversations without rewriting mail or fetching complete short bodies from R2',async()=>{
+  const f=fixture();await f.raw('first','From: sender@example.test\r\nMessage-ID: <first@example.test>\r\nSubject: First\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nHello 🌏');
+  const first=(await f.call('Email/import',{emails:{first:{blobId:'first'}}})).created.first;
+  await f.raw('reply','From: sender@example.test\r\nMessage-ID: <reply@example.test>\r\nIn-Reply-To: <first@example.test>\r\nSubject: Reply\r\n\r\nReply body');
+  const reply=(await f.call('Email/import',{emails:{reply:{blobId:'reply'}}})).created.reply;f.restart();f.activity.reset();
+  const thread=await f.call('Thread/get',{ids:[first.threadId]});expect(new Set(thread.list[0].emailIds)).toEqual(new Set([first.id,reply.id]));
+  const messages=await f.call('Email/get',{ids:thread.list[0].emailIds,fetchAllBodyValues:true});
+  expect(messages.list.map((message:any)=>Object.values(message.bodyValues)[0])).toEqual(expect.arrayContaining([expect.objectContaining({value:'Hello 🌏',isTruncated:false}),expect.objectContaining({value:'Reply body',isTruncated:false})]));
+  const clipped=await f.call('Email/get',{ids:[first.id],fetchTextBodyValues:true,maxBodyValueBytes:8});expect(Object.values(clipped.list[0].bodyValues)[0]).toEqual({value:'Hello ',isEncodingProblem:false,isTruncated:true});
+  expect((await f.call('Email/get',{ids:[reply.id]})).list.map((message:any)=>message.id)).toEqual([reply.id]);
+  expect(f.activity.writes).toBe(0);expect(f.activity.alarms).toBe(0);expect(f.activity.blobReads).toEqual([]);
+  await f.call('Email/set',{update:{[reply.id]:{'keywords/$seen':true}}});f.restart();
+  const preserved=await f.call('Email/get',{ids:[first.id,reply.id],fetchTextBodyValues:true});expect(preserved.list).toHaveLength(2);expect(preserved.list[1].keywords.$seen).toBe(true);
+  expect((await f.call('Email/query',{filter:{body:'Hello'}})).ids).toEqual([first.id]);
+});
+
+it('streams a truncated body with one R2 read while retaining UTF-8 limits and read authorization',async()=>{
+  const f=fixture(),body='🌏 long body '.repeat(1000);await f.raw('large',`From: sender@example.test\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`);
+  const imported=(await f.call('Email/import',{emails:{large:{blobId:'large'}}})).created.large;f.restart();f.activity.reset();
+  const denied=await f.call('Email/get',{ids:[imported.id],fetchTextBodyValues:true},['mail.send']);expect(denied.type).toBe('forbidden');expect(f.activity.blobReads).toEqual([]);
+  const full=await f.call('Email/get',{ids:[imported.id],fetchTextBodyValues:true});expect(Object.values(full.list[0].bodyValues)[0]).toMatchObject({value:body,isTruncated:false});expect(f.activity.blobReads).toHaveLength(1);
+  f.activity.reset();const clipped=await f.call('Email/get',{ids:[imported.id],fetchTextBodyValues:true,maxBodyValueBytes:13});const value:any=Object.values(clipped.list[0].bodyValues)[0];expect(value.isTruncated).toBe(true);expect(new TextEncoder().encode(value.value).length).toBeLessThanOrEqual(13);expect(value.value).not.toContain('�');
+  expect(f.activity.blobReads).toHaveLength(1);expect(f.activity.writes).toBe(0);expect(f.activity.alarms).toBe(0);
+});
+
+it('rejects oversized thread batches instead of returning incomplete conversation history',async()=>{
+  const f=fixture();await f.call('Email/get',{ids:[]});
+  f.db.exec(`WITH RECURSIVE n(value) AS (VALUES(0) UNION ALL SELECT value+1 FROM n WHERE value<1000) INSERT INTO mail_objects(type,id,json) SELECT 'Email',printf('m%04d',value),json_object('id',printf('m%04d',value),'threadId',printf('thread%d',value%5)) FROM n`);
+  f.db.exec(`INSERT INTO mail_email_index(id,received_at,sent_at,size,subject,sender,recipients,cc,bcc,body,has_attachment,thread_id) SELECT id,1,1,1,'','','','','','',0,json_extract(json,'$.threadId') FROM mail_objects WHERE type='Email'`);f.db.exec("UPDATE mail_email_index SET received_at=0 WHERE id='m1000'; UPDATE mail_email_index SET received_at=3 WHERE id='m0000'");f.restart();f.activity.reset();
+  const oversized=await f.call('Thread/get',{ids:['thread0','thread1','thread2','thread3','thread4']});expect(oversized.type).toBe('tooManyObjects');expect(oversized.list).toBeUndefined();
+  const complete=await f.call('Thread/get',{ids:['thread0','missing']});expect(complete.list).toHaveLength(1);expect(complete.list[0].emailIds).toHaveLength(201);expect(complete.list[0].emailIds.slice(0,3)).toEqual(['m1000','m0005','m0010']);expect(complete.list[0].emailIds.at(-1)).toBe('m0000');expect(complete.notFound).toEqual(['missing']);
+  expect(f.activity.writes).toBe(0);expect(f.activity.alarms).toBe(0);expect(f.activity.blobReads).toEqual([]);
+});
 
 it('accepts every product event type while rejecting unknown types and actors without read authority',async()=>{
   const f=fixture();const response=await f.eventResponse(MAIL_EVENT_TYPES);expect(response.status).toBe(200);

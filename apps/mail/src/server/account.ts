@@ -221,10 +221,13 @@ export class MailAccount {
   private async execute(request: any, context: MailContext) {
     if (!Array.isArray(request.methodCalls) || request.methodCalls.length > 100) throw new Error('methodCalls must be an array of at most 100 calls');
     if ((request.using||[]).some((value:string)=>!capabilities.has(value))) return { type:'unknownCapability' };
-    const methodResponses:any[] = []; const createdIds:Record<string,string> = {...request.createdIds};
+    const methodResponses:any[] = []; const createdIds:Record<string,string> = {...request.createdIds};let scheduleAlarm=false;
     for (const tuple of request.methodCalls) {
       if (!Array.isArray(tuple) || tuple.length!==3) throw new Error('Invalid method call');
-      const [name,originalArgs,callId] = tuple; let args:any = clone(originalArgs);const before=clone(this.state!);
+      const [name,originalArgs,callId] = tuple;const conversationRead=name==='Email/get'||name==='Thread/get';
+      // These reads only hydrate a temporary Email page. Committing that page
+      // would rewrite its metadata and search indexes without changing mail.
+      let args:any = clone(originalArgs);const before=conversationRead?this.state!:clone(this.state!);if(!conversationRead)scheduleAlarm=true;
       try {
         for (const [key,reference] of Object.entries(args)) if (key.startsWith('#')) {
           const ref:any=reference; const response=methodResponses.find(value=>value[2]===ref.resultOf&&value[0]===ref.name);
@@ -252,11 +255,12 @@ export class MailAccount {
         // resolver command must recheck it rather than replay a permanent error.
         if(operationKey&&!existing&&!(name==='Identity/resolve'&&result.type==='serverFail')){this.state!.receipts[operationKey]={fingerprint,response:clone(result)};const receiptKeys=Object.keys(this.state!.receipts);if(receiptKeys.length>10000)delete this.state!.receipts[receiptKeys[0]];}
         for(const [key,value] of Object.entries(result.created||{})) createdIds[key]=(value as any).id;
-        const implicit=result.__implicitResponses||[];delete result.__implicitResponses;if(name!=='Lifecycle/get')this.save();
+        const implicit=result.__implicitResponses||[];delete result.__implicitResponses;if(!conversationRead&&name!=='Lifecycle/get')this.save();
         methodResponses.push([result.type&&result.accountId===undefined?'error':name,result,callId]);for(const [implicitName,implicitResult]of implicit)methodResponses.push([implicitName,implicitResult,callId]);
       }catch(error){this.pendingSql=[];this.pendingActions=[];this.state=this.repository.load({includeEmails:false})||before;this.persistedRevision=this.state.sequence;methodResponses.push(['error',stateError(error instanceof Error&&error.message==='anchorNotFound'?'anchorNotFound':'invalidArguments',error instanceof Error?error.message:'Invalid arguments'),callId]);}
+      finally{if(conversationRead)this.state!.objects.Email={};}
     }
-    await this.scheduleAlarm();
+    if(scheduleAlarm)await this.scheduleAlarm();
     return {methodResponses,sessionState:token(this.state!.sequence),createdIds};
   }
   private validateRuleForward(rule:MailObject,context:MailContext){if(!rule.actions?.forwardTo?.length)return;if(!context.actor.actions.includes('mail.manage')||!context.actor.actions.includes('mail.send')||!context.authorityProof)throw new Error('Forwarding rules require management and sending authorization');this.assertAutomationAuthority(context);for(const address of rule.actions.forwardTo)if(!this.state!.objects.ForwardingVerification?.[address.toLowerCase()]?.verified)throw new Error('Rule destination is not verified');}
@@ -563,7 +567,7 @@ export class MailAccount {
       return {accountId,state:token(state.sequence),jobId,total:page.total,processed:page.nextCursor,hasMore:page.hasMore};
     }
     if(name==='Rule/preview'){const rules=args.rules?args.rules.map(validateRule):this.getRules().filter(rule=>!args.ruleIds||args.ruleIds.includes(rule.id));const list=this.getEmails().filter(email=>!args.emailIds||args.emailIds.includes(email.id)).map(email=>({before:email,after:applyRules(email as any,rules as any)})).filter(item=>JSON.stringify(item.before)!==JSON.stringify(item.after));return {accountId,state:currentState,list:list.map(item=>({id:item.before.id,mailboxIds:item.after.mailboxIds,keywords:item.after.keywords})),total:list.length,bounded:true};}
-    if(type==='Thread'&&operation==='get') {for(const email of this.repository.readEmails({threadIds:args.ids,limit:1000}))state.objects.Email[email.id]=email;const threads:Record<string,MailObject>={};for(const email of this.getEmails()){threads[email.threadId]??={id:email.threadId,emailIds:[]};threads[email.threadId].emailIds.push(email.id);}return this.getResponse(threads,args);}
+    if(type==='Thread'&&operation==='get') {const page=this.repository.readThreads(args.ids);if(page.hasMore)return stateError('tooManyObjects','Thread membership exceeds the bounded response; request fewer threads');return this.getResponse(Object.fromEntries(page.threads.map(thread=>[thread.id,thread])),args);}
     if(!writableTypes.has(type)||!state.objects[type])return stateError('unknownMethod');
     if(operation==='get'){const source=type==='Identity'?Object.fromEntries(Object.entries(state.objects.Identity).filter(([,item])=>!item.transferredTo)):type==='EmailSubmission'&&!context.actor.actions.includes('mail.read')?Object.fromEntries(Object.entries(state.objects[type]).filter(([,item])=>item.actorId===context.actor.id)):state.objects[type];const result=this.getResponse(source,type==='Email'?{...args,properties:undefined}:args);result.list=result.list.map((item:MailObject)=>{const projected=this.publicObject(type,item);if(type==='EmailSubmission'){const retained=state.objects.EmailSubmission[item.id];projected.recoverable=['mail.read','mail.draft'].every(action=>context.actor.actions.includes(action))&&['failed','uncertain'].includes(retained?.status)&&typeof retained?.emailSnapshot?.blobId==='string'&&(!retained.emailSnapshot.quarantine||retained.emailSnapshot.quarantine.status==='clean')&&this.blobIsClean(retained.emailSnapshot.blobId);}return projected;});if(type==='Rule')result.list.sort((a:MailObject,b:MailObject)=>(a.sortOrder??0)-(b.sortOrder??0)||a.id.localeCompare(b.id));if(type==='Mailbox')result.list=result.list.map((item:MailObject)=>this.mailbox(item,context));if(type==='Email'){
       let remaining=32*1024*1024;
@@ -763,9 +767,15 @@ return result;}
   }
   private async readBodyValues(email:MailObject,args:any){
     const values:Record<string,any>={};const parts=[...(args.fetchAllBodyValues||args.fetchTextBodyValues?email.textBody||[]:[]),...(args.fetchAllBodyValues||args.fetchHTMLBodyValues?email.htmlBody||[]:[])];let total=0;
-    for(const part of parts){const source=await this.mimeSource(part.blobId);const reader=(await source.read()).getReader();let decoder:TextDecoder;try{decoder=new TextDecoder(part.charset||'utf-8');}catch{decoder=new TextDecoder();}let value='',bytes=0,truncated=false;const limit=args.maxBodyValueBytes>0?args.maxBodyValueBytes:32*1024*1024;
+    for(const part of parts){if(Object.hasOwn(values,part.partId))continue;const retained=email.bodyValues?.[part.partId];let value='',bytes=0,truncated=false;const limit=args.maxBodyValueBytes>0?args.maxBodyValueBytes:32*1024*1024;
       const append=(text:string)=>{const encoded=new TextEncoder().encode(text);let accepted=text;let length=encoded.length;if(bytes+length>limit){if(!args.maxBodyValueBytes)throw new Error('Requested body values exceed the bounded response size');let end=limit-bytes;while(end>0&&end<encoded.length&&(encoded[end]&0xc0)===0x80)end--;accepted=new TextDecoder().decode(encoded.subarray(0,end));length=end;truncated=true;}bytes+=length;value+=accepted;total+=length;if(total>32*1024*1024)throw new Error('Requested body values exceed the bounded response size');};
-      try{while(true){const result=await reader.read();if(result.done){append(decoder.decode());break;}append(decoder.decode(result.value,{stream:true}));if(truncated){await reader.cancel();break;}}}finally{reader.releaseLock();}values[part.partId]={value:value.replace(/\r\n/g,'\n'),isEncodingProblem:email.bodyValues?.[part.partId]?.isEncodingProblem||false,isTruncated:truncated};
+      const record=()=>{values[part.partId]={value:value.replace(/\r\n/g,'\n'),isEncodingProblem:retained?.isEncodingProblem||false,isTruncated:truncated};};
+      // Complete short bodies already live beside the message metadata. Large
+      // or truncated values still stream from their immutable decoded R2 leaf.
+      if(typeof retained?.value==='string'&&!retained.isTruncated){append(retained.value);record();continue;}
+      const object=await this.env.MAIL_BLOBS.get(this.key(part.blobId));if(!object)throw new Error('Blob not found');if(object.size===undefined){await object.body?.cancel();throw new Error('Streaming blob metadata is required');}
+      if(!object.body&&object.size>1024*1024)throw new Error('Streaming blob body is required');const reader=(object.body??new Response(await object.arrayBuffer()).body!).getReader();let decoder:TextDecoder;try{decoder=new TextDecoder(part.charset||'utf-8');}catch{decoder=new TextDecoder();}
+      try{while(true){const result=await reader.read();if(result.done){append(decoder.decode());break;}append(decoder.decode(result.value,{stream:true}));if(truncated)break;}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}record();
     }return values;
   }
   private async composeStored(object:MailObject,context:MailContext){

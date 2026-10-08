@@ -4,6 +4,15 @@ const session:MailSession={username:'actor',actorId:'actor',organizationId:'org'
 describe('Mail JMAP browser client',()=>{
  beforeEach(()=>{vi.stubGlobal('window',{location:{origin:'https://enough.example'}});});
  afterEach(()=>vi.unstubAllGlobals());
+ it('does not roll confirmed edit state back when an older speculative read finishes later',async()=>{
+  let complete!: (response:Response)=>void;
+  vi.stubGlobal('fetch',vi.fn(async(_url,options)=>{const name=JSON.parse(options.body).methodCalls[0][0];if(name==='Email/get')return new Promise<Response>(resolve=>{complete=resolve;});return Response.json({methodResponses:[['Email/set',{oldState:'7',newState:'8',updated:{e:null}},'ui']]});}));
+  const client=new MailClient();client.session=session;client.states.set('a:Email','7');
+  const reading=client.readBatch([['Email/get',{ids:['e']},'emails']],'a');
+  await client.call('Email/set',{update:{e:{'keywords/$seen':true}}},'a');
+  complete(Response.json({methodResponses:[['Email/get',{accountId:'a',state:'7',list:[]},'emails']]}));
+  await reading;expect(client.states.get('a:Email')).toBe('8');
+ });
  it('rejects cross-origin server endpoints including protocol-relative URLs',()=>{expect(()=>safeEndpoint('https://attacker.example/jmap')).toThrow('untrusted');expect(()=>safeEndpoint('//attacker.example/jmap')).toThrow('untrusted');expect(safeEndpoint('/apps/mail/jmap/api')).toBe('/apps/mail/jmap/api');});
  it('sends state preconditions and persistent operation IDs inside method arguments',async()=>{const requests:any[]=[];vi.stubGlobal('fetch',vi.fn(async(_url,options)=>{requests.push(JSON.parse(options.body));return new Response(JSON.stringify({methodResponses:[['Email/set',{oldState:'7',newState:'8',updated:{e:null}},'ui']]}),{status:200});}));const client=new MailClient();client.session=session;client.states.set('a:Email','7');await client.call('Email/set',{operationId:'same-command',update:{e:{keywords:{$seen:true}}}},'a');expect(requests[0].methodCalls[0][1]).toMatchObject({accountId:'a',operationId:'same-command',ifInState:'7'});expect(client.states.get('a:Email')).toBe('8');});
  it('fences automatic domain setup as an idempotent mutation',async()=>{let request:any;vi.stubGlobal('fetch',vi.fn(async(_url,options)=>{request=JSON.parse(options.body);return Response.json({methodResponses:[['Domain/setup',{status:'pending',newState:'domain-8'},'ui']]});}));const client=new MailClient();client.session=session;client.states.set('a:Domain','domain-7');await client.call('Domain/setup',{domainId:'domain'},'a');expect(request.requestId).toEqual(expect.any(String));expect(request.methodCalls[0][1]).toMatchObject({accountId:'a',domainId:'domain',ifInState:'domain-7',operationId:expect.any(String)});expect(client.states.get('a:Domain')).toBe('domain-8');});

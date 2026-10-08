@@ -137,6 +137,8 @@ export class MailClient {
     /** One authorized read envelope, including standard JMAP result references. Never retries mutations. */
     async readBatch(calls: [string, Record<string, unknown>, string][], accountId: string): Promise<Record<string, Record<string, any>>> {
         if (calls.some(([name]) => !/\/(get|query|changes|queryChanges)$/.test(name))) throw new Error('Only reads can be grouped.');
+        const readSession=this.session;
+        const observedStates=new Map(calls.map(([name])=>{const key=`${accountId}:${name.split('/')[0]}`;return [key,this.states.get(key)];}));
         const response = await mailFetch(safeEndpoint(this.session.apiUrl), {
             method: 'POST', credentials: 'same-origin', signal: AbortSignal.timeout(20000),
             headers: { 'Content-Type': 'application/json' },
@@ -155,7 +157,10 @@ export class MailClient {
             if (tuple[0] === 'error') throw Object.assign(new Error(String(tuple[1].description || tuple[1].type || 'Mail request failed.')), { confirmed: true, errorType: tuple[1].type });
             if (tuple[0] !== name) throw new Error('Mail server returned an unexpected response.');
             results[id] = tuple[1];
-            if (typeof tuple[1].state === 'string') this.states.set(`${accountId}:${name.split('/')[0]}`, tuple[1].state);
+            const key=`${accountId}:${name.split('/')[0]}`;
+            // A speculative read may finish after a confirmed edit or a new session.
+            // Do not replace that newer mutation precondition with its old snapshot.
+            if (typeof tuple[1].state === 'string' && this.session===readSession && this.states.get(key)===observedStates.get(key)) this.states.set(key, tuple[1].state);
         }
         return results;
     }

@@ -76,6 +76,8 @@ async function call(name:string,args:any={},id=accountId):Promise<any>{
  }
  return {accountId:id,state:'fixture-1',status:'verified',total:0,processed:0,hasMore:false};
 }
+const conversationLatency=Math.min(5000,Math.max(0,Number(params.get('latency'))||0));
+let conversationReads=0;
 const response=(value:any,status=200)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});
 const account={id:accountId,name:allAccounts[accountId]?.name||'Personal',ownerActorId:session.actorId,version:1,canManage:state!=='readonly',grants:isEmpty?[]:[{actorId:'review-jamie',actions:['mail.read','mail.draft']}]};
 // Every fetch, including mutations, is intercepted locally. Never fall through to a network transport.
@@ -85,7 +87,7 @@ window.fetch=async(input:any,init:any={})=>{
  if(state==='loading'&&path.includes('/api/'))return new Promise(()=>{});
  if(state==='error')return response({message:'We couldn’t load this page. Check your connection and try again.'},503);
  if(path.endsWith('/jmap/session'))return response(session);
- if(path.endsWith('/jmap')){const payload=JSON.parse(init.body);const methodResponses:any[]=[];for(const [name,original,tag] of payload.methodCalls){const args={...original};for(const key of Object.keys(args).filter(key=>key.startsWith('#'))){const ref=args[key],prior=methodResponses.find(value=>value[2]===ref.resultOf&&value[0]===ref.name);let values=[prior?.[1]];let wildcard=false;for(const part of ref.path.slice(1).split('/')){if(part==='*'){wildcard=true;values=values.flatMap(value=>Array.isArray(value)?value:Object.values(value||{}));}else values=values.map(value=>value?.[part]);}args[key.slice(1)]=wildcard?values:values[0];delete args[key];}methodResponses.push([name,await call(name,args,args.accountId),tag]);}return response({methodResponses,sessionState:'fixture-1'});}
+ if(path.endsWith('/jmap')){const payload=JSON.parse(init.body);if(conversationLatency&&payload.methodCalls.some(([name,args]:any)=>name==='Email/get'&&args.fetchAllBodyValues)){console.info(`[EnoughMail demo] Full conversation envelope ${++conversationReads}; simulated latency ${conversationLatency}ms`);await new Promise(resolve=>setTimeout(resolve,conversationLatency));}const methodResponses:any[]=[];for(const [name,original,tag] of payload.methodCalls){const args={...original};for(const key of Object.keys(args).filter(key=>key.startsWith('#'))){const ref=args[key],prior=methodResponses.find(value=>value[2]===ref.resultOf&&value[0]===ref.name);let values=[prior?.[1]];let wildcard=false;for(const part of ref.path.slice(1).split('/')){if(part==='*'){wildcard=true;values=values.flatMap(value=>Array.isArray(value)?value:Object.values(value||{}));}else values=values.map(value=>value?.[part]);}args[key.slice(1)]=wildcard?values:values[0];delete args[key];}methodResponses.push([name,await call(name,args,args.accountId),tag]);}return response({methodResponses,sessionState:'fixture-1'});}
  if(path.endsWith('/api/session'))return response({user:{id:session.actorId,email:session.username,name:'Alex Morgan',displayName:'Alex Morgan',provider:'local'}});
  if(path==='/api/apps')return response({apps:[{id:'mail',name:'Mail',description:'Your mail, on your own terms.',version:'0.1.0',capabilities:[],embeds:[]}]});
  if(path.endsWith('/api/accounts'))return response({accounts:isEmpty?[]:[account,{...account,id:'review-work',name:'Studio'}]});
