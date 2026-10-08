@@ -9,6 +9,22 @@ describe('Mail JMAP browser client',()=>{
  it('fences automatic domain setup as an idempotent mutation',async()=>{let request:any;vi.stubGlobal('fetch',vi.fn(async(_url,options)=>{request=JSON.parse(options.body);return Response.json({methodResponses:[['Domain/setup',{status:'pending',newState:'domain-8'},'ui']]});}));const client=new MailClient();client.session=session;client.states.set('a:Domain','domain-7');await client.call('Domain/setup',{domainId:'domain'},'a');expect(request.requestId).toEqual(expect.any(String));expect(request.methodCalls[0][1]).toMatchObject({accountId:'a',domainId:'domain',ifInState:'domain-7',operationId:expect.any(String)});expect(client.states.get('a:Domain')).toBe('domain-8');});
  it('retains explicit undo state instead of rebasing onto current state',async()=>{let args:any;vi.stubGlobal('fetch',vi.fn(async(_url,options)=>{args=JSON.parse(options.body).methodCalls[0][1];return new Response(JSON.stringify({methodResponses:[['error',{type:'stateMismatch'},'ui']]}));}));const client=new MailClient();client.session=session;client.states.set('a:Email','newer');await expect(client.call('Email/set',{ifInState:'original-change-state',update:{e:{keywords:{}}}},'a')).rejects.toThrow('stateMismatch');expect(args.ifInState).toBe('original-change-state');expect(client.states.get('a:Email')).toBe('newer');});
  it('rejects partial mutation failure rather than displaying success',async()=>{vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({methodResponses:[['EmailSubmission/set',{notCreated:{send:{type:'forbidden',description:'Identity not verified'}}},'ui']]}))));const client=new MailClient();client.session=session;await expect(client.call('EmailSubmission/set',{create:{send:{emailId:'e',identityId:'i'}}},'a')).rejects.toThrow('Identity not verified');});
+ it('uses confirmed state from a partially failed mutation when retrying another domain',async()=>{
+  const requests:any[]=[];
+  vi.stubGlobal('fetch',vi.fn(async(_url,options)=>{
+   requests.push(JSON.parse(options.body));
+   return Response.json({methodResponses:[['Domain/set',requests.length===1
+    ?{oldState:'7',newState:'8',updated:{first:null},notUpdated:{second:{type:'invalidProperties',description:'Delivery could not be saved'}}}
+    :{oldState:'8',newState:'9',updated:{second:null}},'ui']]});
+  }));
+  const client=new MailClient();client.session=session;client.states.set('a:Domain','7');
+  await expect(client.call('Domain/set',{update:{first:{catchAllAccountId:'a'},second:{catchAllAccountId:'a'}}},'a')).rejects.toThrow('Delivery could not be saved');
+  expect(client.states.get('a:Domain')).toBe('8');
+  await client.call('Domain/set',{update:{second:{catchAllAccountId:'a'}}},'a');
+  expect(requests[1].methodCalls[0][1].ifInState).toBe('8');
+  expect(requests[1].methodCalls[0][1].operationId).not.toBe(requests[0].methodCalls[0][1].operationId);
+  expect(client.states.get('a:Domain')).toBe('9');
+ });
  it('reports expired authorization without caching new session data',async()=>{vi.stubGlobal('fetch',vi.fn(async()=>new Response('',{status:403})));const client=new MailClient();await expect(client.discover()).rejects.toThrow('Sign in');expect(client.session).toBeUndefined();});
 });
 

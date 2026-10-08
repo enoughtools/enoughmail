@@ -54,6 +54,27 @@ test('existing domains from other inboxes remain available for address assignmen
  expect(options).toContain('b.test'); expect(options).not.toContain('a.test');
 });
 
+test('discovered domains create only writable configuration fields, excluding Cloudflare status', async () => {
+ const client = fixture(); const original = client.call;
+ client.call = vi.fn(async (method, args, id) => {
+  if (method === 'Domain/set') return { created: { discovered: { id: 'new-domain' } } };
+  if (method === 'Domain/setup') return { status: 'pending', newState: 'domain-2', message: 'Waiting for setup review.' };
+  return original(method, args, id);
+ }) as typeof client.call;
+ const domain = { name: 'discovered.test', zoneId: 'a'.repeat(32), status: 'active' };
+ vi.stubGlobal('fetch', vi.fn(async (url: string) => Response.json(url.includes('/discovery?')
+  ? url.includes('&zoneId=')
+   ? { domain, existingMail: true, delivery: 'cloudflare', routingCheck: 'verified', mailExchangers: ['route1.mx.cloudflare.net'] }
+   : { domains: [domain], pages: 1 }
+  : { revision: 0 })));
+ const host = await render(<DomainsSettings client={client} onAddresses={() => {}} onBusy={() => {}} />);
+ const button = (text: string) => [...host.querySelectorAll('button')].find(element => element.textContent === text)!;
+ await act(async () => button('Review domain').click());
+ await act(async () => button('Set up discovered.test').click());
+ expect(client.call).toHaveBeenCalledWith('Domain/set', { create: { discovered: { name: 'discovered.test', zoneId: 'a'.repeat(32), enabled: true, catchAllAccountId: null } } }, 'a');
+ expect(client.call).toHaveBeenCalledWith('Domain/setup', { domainId: 'new-domain', reviewOnly: true }, 'a');
+});
+
 function deliveryFixture(save: () => Promise<unknown>) {
  const client = fixture(); const original = client.call;
  client.call = vi.fn(async (method, args, id) => {

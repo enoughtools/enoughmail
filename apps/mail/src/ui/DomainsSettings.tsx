@@ -70,7 +70,7 @@ export default function DomainsSettings({ client, onAddresses, onBusy }: { clien
     if (!accountId || loading || failures.length) return;
     setBusy(true); setError('');
     try {
-      const result = await client.call<{ created?: Record<string, { id: string }> }>('Domain/set', { create: { discovered: { ...domain, enabled: true, catchAllAccountId: null } } }, accountId);
+      const result = await client.call<{ created?: Record<string, { id: string }> }>('Domain/set', { create: { discovered: { name: domain.name, zoneId: domain.zoneId, enabled: true, catchAllAccountId: null } } }, accountId);
       const id = result.created?.discovered?.id;
       if (!id) throw new Error('The domain could not be added. Reload before trying again.');
       setRevision(value => value + 1);

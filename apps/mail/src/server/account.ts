@@ -624,6 +624,19 @@ return result;}
       if(type==='Domain'&&Object.keys(patch as any).some(key=>['dnsState','sendingVerified'].includes(key)))throw new Error('Domain verification is server owned');
       if(type==='EmailSubmission'&&!context.actor.actions.includes('mail.read')&&existing.actorId!==context.actor.id)throw new Error('Submission belongs to another actor');
       let next=patchObject(existing,patch as any);
+      if(type==='Domain'&&Object.hasOwn(patch as object,'catchAllAccountId')&&next.catchAllAccountId!==null&&next.catchAllAccountId!==context.accountId)throw new Error('Unmatched-address delivery must use this inbox.');
+      if(type==='Domain'&&Object.keys(patch as object).length===1&&Object.hasOwn(patch as object,'catchAllAccountId')){
+        this.validate(type,next);
+        // A delivery toggle must not briefly withdraw every explicit address.
+        // Commit the preference only after its one directory write is confirmed.
+        if(next.catchAllAccountId===context.accountId&&next.sendingVerified){
+          if(!this.env.MAIL_DIRECTORY)throw new Error('Mail routing directory unavailable');
+          const account={accountId:context.accountId,organizationId:context.organizationId,workspaceId:context.workspaceId,ownerActorId:context.actor.id};
+          const registered=await this.env.MAIL_DIRECTORY.get(this.env.MAIL_DIRECTORY.idFromName('directory')).fetch(new Request('https://mail-directory/register-address',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({account,address:next.name,enabled:next.enabled!==false,catchAll:true})}));
+          if(!registered.ok)throw new Error(registered.status===409?'Unmatched-address delivery already belongs to another inbox.':'Unmatched-address delivery could not be saved.');
+        }else if(next.catchAllAccountId!==context.accountId&&existing.catchAllAccountId===context.accountId)await this.withdrawAddress(existing.name,context,true);
+        this.store(type,next);response.updated[id]=null;continue;
+      }
       if(type==='Identity'&&next.email!==existing.email)next.verified=false;
       if(type==='Domain'&&['name','zoneId','sendingSubdomainId'].some(key=>next[key]!==existing[key])){next.dnsState='unverified';next.sendingVerified=false;next.receivingConnected=false;}
       if(type==='Mailbox'&&existing.id.startsWith('folder-')&&(next.name!==existing.name||next.parentId!==existing.parentId))throw new Error('System mailbox cannot be renamed or moved');

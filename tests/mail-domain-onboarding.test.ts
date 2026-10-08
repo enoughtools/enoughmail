@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { prepareSendingDomain, connectDomainRouting, inspectDomainRouting, planDomainDns } from '../apps/mail/src/server/domains';
 import { MailAccount } from '../apps/mail/src/server/account';
+import { MailDirectory, type DirectoryStorage } from '../apps/mail/src/server/directory';
 const zoneId = 'a'.repeat(32), sendingId = 'b'.repeat(32);
 const response = (result: unknown) => Response.json({ success: true, result });
 afterEach(() => vi.unstubAllGlobals());
@@ -68,7 +69,7 @@ describe('Domain setup in Mail', () => {
   });
 });
 
-function automaticSetupFixture(options: { foreignMx?: boolean; foreignRoute?: boolean; foreignRecipient?: boolean; dnsFailure?: boolean; routeFailure?: boolean } = {}) {
+function automaticSetupFixture(options: { foreignMx?: boolean; foreignRoute?: boolean; foreignRecipient?: boolean; dnsFailure?: boolean; routeFailure?: boolean; directoryFetch?: (request: Request) => Promise<Response> } = {}) {
   const db = new DatabaseSync(':memory:');
   const records: any[] = options.foreignMx ? [{ id: 'c'.repeat(32), type: 'MX', name: 'example.com', content: 'mx.other.example', priority: 10 }] : [];
   let route: any = { enabled: Boolean(options.foreignRoute), actions: [{ type: 'forward', value: ['existing@example.com'] }] };
@@ -107,7 +108,7 @@ function automaticSetupFixture(options: { foreignMx?: boolean; foreignRoute?: bo
     transactionSync<T>(task: () => T): T { db.exec('SAVEPOINT test'); try { const result = task(); db.exec('RELEASE test'); return result; } catch (error) { db.exec('ROLLBACK TO test; RELEASE test'); throw error; } },
     async setAlarm() {}, async deleteAlarm() {},
   };
-  const account = new MailAccount({ storage }, { MAIL_BLOBS: { async put() {}, async get() { return null; }, async delete() {} }, CF_API_TOKEN: 'test', MAIL_INGRESS_WORKER: 'enough-mail-ingress', MAIL_DIRECTORY: { idFromName: name => name, get: () => ({ fetch: async (request: Request) => { const path = new URL(request.url).pathname; directory.push({ path, body: await request.json() }); return Response.json(path === '/authorize-zone' ? { allowed: true } : {}); } }) } });
+  const account = new MailAccount({ storage }, { MAIL_BLOBS: { async put() {}, async get() { return null; }, async delete() {} }, CF_API_TOKEN: 'test', MAIL_INGRESS_WORKER: 'enough-mail-ingress', MAIL_DIRECTORY: { idFromName: name => name, get: () => ({ fetch: async (request: Request) => { const path = new URL(request.url).pathname; directory.push({ path, body: await request.clone().json() }); return options.directoryFetch ? options.directoryFetch(request) : Response.json(path === '/authorize-zone' ? { allowed: true } : {}); } }) } });
   async function call(name: string, args: any = {}, actions = ['mail.read', 'mail.manage'], workspaceRole = 'owner') {
     const result = await account.fetch(new Request('https://account/jmap', { method: 'POST', body: JSON.stringify({ accountId: 'account', organizationId: 'org', workspaceId: 'workspace', actor: { id: 'owner', actions, workspaceRole }, request: { using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail'], methodCalls: [[name, { accountId: 'account', ...args }, 'call']] } }) }));
     return (await result.json() as any).methodResponses[0][1];
@@ -161,6 +162,90 @@ describe('Automatic domain setup', () => {
       expect((await fixture.call('Domain/setup', { ...args, operationId: crypto.randomUUID() }, undefined, 'member')).type).toBe('forbidden');
       expect((await fixture.call('Domain/setup', { ...args, operationId: crypto.randomUUID(), ifInState: 'stale' })).type).toBe('stateMismatch');
       expect(fixture.provider).not.toHaveBeenCalled();
+    } finally { fixture.close(); }
+  });
+});
+
+describe('Unmatched-address delivery updates', () => {
+  function deliveryFixture() {
+    const values = new Map<string, unknown>();
+    const storage: DirectoryStorage = {
+      async get<T>(key: string) { return structuredClone(values.get(key)) as T | undefined; },
+      async put(key, value) { values.set(key, structuredClone(value)); },
+      async delete(key) { return values.delete(key); },
+      async transaction(callback) { return callback(storage); },
+    };
+    const directory = new MailDirectory({ storage });
+    let rejectCatchAll = false;
+    const fixture = automaticSetupFixture({ directoryFetch: async request => {
+      const path = new URL(request.url).pathname;
+      if (path === '/authorize-zone') return Response.json({ allowed: true });
+      const body = await request.clone().json() as { catchAll?: boolean };
+      if (path === '/register-address' && body.catchAll && rejectCatchAll) return Response.json({ error: 'temporarily_unavailable' }, { status: 503 });
+      return directory.fetch(request);
+    } });
+    const resolve = async (address: string) => (await (await directory.fetch(new Request('https://directory/resolve', { method: 'POST', body: JSON.stringify({ address }) }))).json() as { route: { accountId: string } | null }).route;
+    return { ...fixture, directoryService: directory, resolve, reject: (value: boolean) => { rejectCatchAll = value; } };
+  }
+
+  it('preserves explicit routes and stored preferences through failed toggles, then retries in place', async () => {
+    const fixture = deliveryFixture();
+    try {
+      const initial = await fixture.create();
+      const ready = await fixture.call('Domain/setup', initial);
+      expect(ready.status).toBe('ready');
+      const update = (catchAllAccountId: string | null, ifInState: string) => fixture.call('Domain/set', { operationId: crypto.randomUUID(), ifInState, update: { [initial.domainId]: { catchAllAccountId } } });
+      fixture.directory.length = 0;
+      fixture.reject(true);
+      const failedEnable = await update('account', ready.newState);
+      expect(failedEnable.notUpdated[initial.domainId].description).toContain('could not be saved');
+      expect(failedEnable.newState).toBe(ready.newState);
+      expect((await fixture.call('Domain/get')).list[0].catchAllAccountId ?? null).toBe(null);
+      expect(await fixture.resolve('russell@example.com')).toMatchObject({ accountId: 'account' });
+      expect(await fixture.resolve('unknown@example.com')).toBeNull();
+      expect(fixture.directory.every(call => call.path === '/register-address' && call.body.catchAll)).toBe(true);
+
+      fixture.reject(false);
+      const enabled = await update('account', failedEnable.newState);
+      expect(enabled.updated).toHaveProperty(initial.domainId);
+      expect(await fixture.resolve('unknown@example.com')).toMatchObject({ accountId: 'account' });
+      fixture.reject(true);
+      const failedDisable = await update(null, enabled.newState);
+      expect(failedDisable.notUpdated[initial.domainId]).toBeDefined();
+      expect(failedDisable.newState).toBe(enabled.newState);
+      expect((await fixture.call('Domain/get')).list[0].catchAllAccountId).toBe('account');
+      expect(await fixture.resolve('unknown@example.com')).toMatchObject({ accountId: 'account' });
+
+      fixture.reject(false);
+      const disabled = await update(null, failedDisable.newState);
+      expect(disabled.updated).toHaveProperty(initial.domainId);
+      expect(await fixture.resolve('unknown@example.com')).toBeNull();
+      expect(await fixture.resolve('russell@example.com')).toMatchObject({ accountId: 'account' });
+      expect(fixture.directory.every(call => call.path === '/register-address' && call.body.catchAll)).toBe(true);
+    } finally { fixture.close(); }
+  });
+
+  it('preserves another inbox’s catch-all and rejects foreign targets and stale commands', async () => {
+    const fixture = deliveryFixture();
+    try {
+      const initial = await fixture.create();
+      const ready = await fixture.call('Domain/setup', initial);
+      expect(ready.status).toBe('ready');
+      const foreign = await fixture.directoryService.fetch(new Request('https://directory/register-address', { method: 'POST', body: JSON.stringify({ account: { accountId: 'other', organizationId: 'org', workspaceId: 'workspace', ownerActorId: 'owner' }, address: 'example.com', catchAll: true, enabled: true }) }));
+      expect(foreign.ok).toBe(true);
+      const update = (catchAllAccountId: string, ifInState: string) => fixture.call('Domain/set', { operationId: crypto.randomUUID(), ifInState, update: { [initial.domainId]: { catchAllAccountId } } });
+      fixture.directory.length = 0;
+      expect(await update('account', 'stale')).toMatchObject({ type: 'stateMismatch' });
+      const foreignTarget = await update('other', ready.newState);
+      expect(foreignTarget.notUpdated[initial.domainId].description).toContain('must use this inbox');
+      expect(fixture.directory).toHaveLength(0);
+      const collision = await update('account', ready.newState);
+      expect(collision.notUpdated[initial.domainId].description).toContain('already belongs to another inbox');
+      expect(collision.newState).toBe(ready.newState);
+      expect((await fixture.call('Domain/get')).list[0].catchAllAccountId ?? null).toBe(null);
+      expect(await fixture.resolve('unknown@example.com')).toMatchObject({ accountId: 'other' });
+      expect(await fixture.resolve('russell@example.com')).toMatchObject({ accountId: 'account' });
+      expect(fixture.directory).toHaveLength(1);
     } finally { fixture.close(); }
   });
 });

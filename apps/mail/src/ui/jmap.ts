@@ -171,6 +171,11 @@ export class MailClient {
         if (tuple[0] === 'error')
             throw Object.assign(new Error(String(tuple[1].description || tuple[1].type || 'Mail request failed.')),{confirmed:tuple[1].type!=='serverFail',errorType:tuple[1].type,submissionNotDispatched:tuple[1].submissionNotDispatched===true});
         const result = tuple[1];
+        // A Set response can advance state even when one requested object fails.
+        // Retain that confirmed state so the next explicit command can retry.
+        const next = result.newState || result.state;
+        if (typeof next === 'string')
+            this.states.set(`${accountId}:${entity}`, next);
         for (const key of ['notCreated', 'notUpdated', 'notDestroyed']) {
             const failures = Object.values((result[key] || {}) as Record<string, {
                 description?: string;
@@ -179,9 +184,6 @@ export class MailClient {
             if (failures.length)
                 throw Object.assign(new Error(failures.map(v => v.description || v.type).join('; ')),{confirmed:true});
         }
-        const next = result.newState || result.state;
-        if (typeof next === 'string')
-            this.states.set(`${accountId}:${entity}`, next);
         return result as T;
     }
     async upload(file: File, accountId: string): Promise<BodyPart> { const path = this.session.uploadUrl.replace('{accountId}', encodeURIComponent(accountId)); const response = await mailFetch(safeEndpoint(path), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': file.type || 'application/octet-stream' }, body: file }); if (!response.ok)
