@@ -31,7 +31,7 @@ export async function loadDomains(client: MailClient) {
 }
 export async function approveDomainReview(domain: ScopedDomain) {
   const params = new URLSearchParams({ domain: domain.name.toLowerCase(), zoneId: (domain.zoneId || '').toLowerCase(), accountId: domain.accountId });
-  const read = await fetch(`/apps/mail/api/domains/approval?${params}`, { method: 'POST', credentials: 'same-origin' });
+  const read = await fetch(`/apps/mail/api/domains/approval?${params}`, { method: 'GET', credentials: 'same-origin' });
   const approval = await read.json() as { revision: number; message?: string };
   if (!read.ok) throw new Error(approval.message || 'Domain access could not be checked.');
   const response = await fetch('/apps/mail/api/domains/approve', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accountId: domain.accountId, domain: domain.name.toLowerCase(), zoneId: (domain.zoneId || '').toLowerCase(), operationId: crypto.randomUUID(), expectedRevision: approval.revision }) });

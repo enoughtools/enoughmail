@@ -355,3 +355,86 @@ describe('Reviewed domain replacement', () => {
     } finally { fixture.close(); }
   });
 });
+
+
+describe('Reviewed adoption recovery and verification order', () => {
+  it('keeps the pre-adoption backup across continuation and starts a new lineage after success', async () => {
+    const fixture = automaticSetupFixture({ foreignMx: true, foreignRoute: true, foreignRecipient: true });
+    try {
+      const initial = await fixture.create();
+      const reviewA = await fixture.call('Domain/setup', { ...initial, reviewOnly: true });
+      const original = fixture.provider.getMockImplementation()!;
+      fixture.provider.mockImplementation(async (input: any, init?: RequestInit) => String(input).endsWith(`/email/sending/subdomains/${sendingId}`) ? response({ name: 'example.com', enabled: false }) : original(input, init));
+      const attemptA = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: reviewA.newState, operationId: crypto.randomUUID(), reviewedProposal: reviewA.proposal });
+      expect(attemptA.status).toBe('pending');
+      expect(attemptA.recovery.proposal.removeRecords[0].content).toBe('mx.other.example');
+      expect(fixture.records.some(record => record.content === 'mx.other.example')).toBe(false);
+
+      fixture.provider.mockImplementation(original);
+      const reviewB = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: attemptA.newState, operationId: crypto.randomUUID(), reviewOnly: true });
+      expect(reviewB.proposal.removeRecords).toEqual([]);
+      expect(reviewB.recovery.id).toBe(attemptA.recovery.id);
+      const attemptB = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: reviewB.newState, operationId: crypto.randomUUID(), reviewedProposal: reviewB.proposal });
+      expect(attemptB.status).toBe('ready');
+      expect(attemptB.recoveryId).not.toBe(attemptA.recovery.id);
+      expect(attemptB.recovery).toMatchObject({ id: attemptA.recovery.id, status: 'applied' });
+      expect(attemptB.recovery.proposal.removeRecords[0].content).toBe('mx.other.example');
+      expect(attemptB.recoveryProgress).toMatchObject({ id: attemptB.recoveryId, status: 'complete', originalRecoveryId: attemptA.recovery.id, previousRecoveryId: attemptA.recovery.id });
+      expect(attemptB.recoveryProgress.completed).toContain('set-catch-all');
+
+      const reviewC = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: attemptB.newState, operationId: crypto.randomUUID(), reviewOnly: true });
+      const attemptC = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: reviewC.newState, operationId: crypto.randomUUID(), reviewedProposal: reviewC.proposal });
+      expect(attemptC.status).toBe('ready');
+      expect(attemptC.recovery.id).toBe(attemptC.recoveryId);
+      expect(attemptC.recovery.proposal.removeRecords).toEqual([]);
+      expect(attemptC.recoveryProgress).toMatchObject({ id: attemptC.recoveryId, originalRecoveryId: attemptC.recoveryId });
+      expect(attemptC.recoveryProgress.previousRecoveryId).toBeUndefined();
+    } finally { fixture.close(); }
+  });
+  it('uses the reviewed sending identity without preparing a replacement at apply time', async () => {
+    const fixture = automaticSetupFixture({ foreignMx: true });
+    try {
+      const initial = await fixture.create();
+      const review = await fixture.call('Domain/setup', { ...initial, reviewOnly: true });
+      const original = fixture.provider.getMockImplementation()!;
+      fixture.provider.mockImplementation(async (input: any, init?: RequestInit) => {
+        if (String(input).endsWith('/email/sending/subdomains')) throw new Error('Do not prepare a reviewed identity again');
+        return original(input, init);
+      });
+      const result = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: review.newState, operationId: crypto.randomUUID(), reviewedProposal: review.proposal });
+      expect(result.status).toBe('ready');
+    } finally { fixture.close(); }
+  });
+  it('keeps forwarding routes active when sending verification is pending', async () => {
+    const fixture = automaticSetupFixture({ foreignRecipient: true });
+    try {
+      const initial = await fixture.create();
+      const review = await fixture.call('Domain/setup', { ...initial, reviewOnly: true });
+      const original = fixture.provider.getMockImplementation()!;
+      fixture.provider.mockImplementation(async (input: any, init?: RequestInit) => {
+        if (String(input).endsWith(`/email/sending/subdomains/${sendingId}`)) return response({ name: 'example.com', enabled: false });
+        return original(input, init);
+      });
+      const result = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: review.newState, operationId: crypto.randomUUID(), reviewedProposal: review.proposal });
+      expect(result.status).toBe('pending');
+      expect(fixture.rules[0].enabled).toBe(true);
+      expect(fixture.provider.mock.calls.some(([input, init]) => String(input).includes('/rules/') && init?.method === 'PUT')).toBe(false);
+      expect(result.recovery.proposal.disableRules).toHaveLength(1);
+    } finally { fixture.close(); }
+  });
+  it('returns the persisted original backup even when a later provider review is unavailable', async () => {
+    const fixture = automaticSetupFixture({ foreignMx: true, dnsFailure: true });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const initial = await fixture.create();
+      const review = await fixture.call('Domain/setup', { ...initial, reviewOnly: true });
+      const pending = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: review.newState, operationId: crypto.randomUUID(), reviewedProposal: review.proposal });
+      expect(pending.recovery.proposal.removeRecords[0].content).toBe('mx.other.example');
+      fixture.provider.mockImplementation(async () => { throw new Error('provider temporarily unavailable'); });
+      const failed = await fixture.call('Domain/setup', { domainId: initial.domainId, ifInState: pending.newState, operationId: crypto.randomUUID(), reviewOnly: true });
+      expect(failed.status).toBe('pending');
+      expect(failed.recovery.id).toBe(pending.recovery.id);
+      expect(failed.recovery.proposal.removeRecords[0].content).toBe('mx.other.example');
+    } finally { warning.mockRestore(); fixture.close(); }
+  });
+});

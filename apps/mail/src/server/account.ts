@@ -332,7 +332,7 @@ export class MailAccount {
         if (!args.ifInState || args.ifInState !== currentState) return stateError('stateMismatch');
         if (!this.env.MAIL_INGRESS_WORKER || domain.enabled === false) return stateError('invalidArguments', 'Enable this domain before setting up delivery.');
         type SetupStage = 'review' | 'dns' | 'verification' | 'receiving';
-        type SetupStep = 'inspectRouting' | 'prepareSending' | 'planDns' | 'applyDns' | 'verifyDns' | 'verifySending' | 'registerAddresses' | 'connectRouting' | 'enableRoutingDns' | 'setCatchAll' | 'verifyFinalDns' | 'verifyRouting';
+        type SetupStep = 'inspectRouting' | 'prepareSending' | 'planDns' | 'applyDns' | 'verifyDns' | 'verifySending' | 'registerAddresses' | 'connectRouting' | 'enableRoutingDns' | 'setCatchAll' | 'verifyFinalDns' | 'verifyRouting' | 'removeDns' | 'disableRecipientRule';
         let stage: SetupStage = 'review';
         let step: SetupStep = 'inspectRouting';
         let diagnostics: { stage: SetupStage; step: SetupStep; code: string; providerCodes?: number[] } | undefined;
@@ -344,19 +344,31 @@ export class MailAccount {
         let recoveryId: string | undefined;
         const reviewed = args.reviewedProposal as DomainSetupProposal | undefined;
         if (reviewed && (reviewed.version !== 1 || reviewed.domain !== domain.name.toLowerCase() || reviewed.zoneId !== domain.zoneId || reviewed.worker !== this.env.MAIL_INGRESS_WORKER || reviewed.sendingSubdomainId !== domain.sendingSubdomainId)) return stateError('invalidArguments', 'Review belongs to another domain configuration.');
-        const answer = (status: 'ready' | 'blocked' | 'pending' | 'review', message: string, extra: Record<string, unknown> = {}) => ({ accountId, domainId: domain.id, status, stage: status === 'ready' ? 'complete' : stage, message, ...extra, ...(recoveryId ? { recoveryId } : {}), ...(diagnostics ? { diagnostics } : {}), newState: token(state.sequence), state: token(state.sequence) });
+        const latestRecovery = () => Object.values(state.objects.PrivateConfig || {}).filter(item => item.domainId === domain.id && item.id.startsWith('domain-setup:')).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || Number(b.createdSequence || 0) - Number(a.createdSequence || 0))[0];
+        const recoveryEvidence = () => {
+          const latest = latestRecovery();
+          if (!latest) return {};
+          const original = state.objects.PrivateConfig?.[latest.originalRecoveryId];
+          const recovery = original?.domainId === domain.id && original.id.startsWith('domain-setup:') ? original : latest;
+          // The rollback evidence stays bound to the first attempt in this
+          // incomplete setup. Current progress belongs to the latest attempt.
+          return {
+            recovery: { id: recovery.id, status: recovery.status, createdAt: recovery.createdAt, completed: recovery.completed, proposal: recovery.proposal },
+            recoveryProgress: { id: latest.id, status: latest.status, createdAt: latest.createdAt, completed: latest.completed, originalRecoveryId: recovery.id, ...(latest.previousRecoveryId ? { previousRecoveryId: latest.previousRecoveryId } : {}) },
+          };
+        };
+        const answer = (status: 'ready' | 'blocked' | 'pending' | 'review', message: string, extra: Record<string, unknown> = {}) => ({ accountId, domainId: domain.id, status, stage: status === 'ready' ? 'complete' : stage, message, ...extra, ...recoveryEvidence(), ...(recoveryId ? { recoveryId } : {}), ...(diagnostics ? { diagnostics } : {}), newState: token(state.sequence), state: token(state.sequence) });
         try {
           // Existing recipient routes must be reviewed before any DNS writes.
           if (!args.reviewOnly && !reviewed) await inspectDomainRouting(this.env, domain.zoneId, this.env.MAIL_INGRESS_WORKER);
           step = 'prepareSending';
-          const sendingSubdomainId = await prepareSendingDomain(this.env, domain.name.toLowerCase(), domain.zoneId);
+          const sendingSubdomainId = reviewed ? reviewed.sendingSubdomainId : await prepareSendingDomain(this.env, domain.name.toLowerCase(), domain.zoneId);
           const configured = { ...domain, sendingSubdomainId };
           this.store('Domain', configured);
           step = 'planDns';
           if (args.reviewOnly) {
             const proposal = await reviewDomainSetup(this.env, domain.name, domain.zoneId, sendingSubdomainId, this.env.MAIL_INGRESS_WORKER);
-            const recovery = Object.values(state.objects.PrivateConfig || {}).filter(item => item.domainId === domain.id && item.id.startsWith('domain-setup:')).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
-            return answer('review', 'Review the exact changes before replacing existing mail delivery.', { proposal, ...(recovery ? { recovery: { id: recovery.id, status: recovery.status, createdAt: recovery.createdAt, completed: recovery.completed, proposal: recovery.proposal } } : {}) });
+            return answer('review', 'Review the exact changes before replacing existing mail delivery.', { proposal });
           }
           if (reviewed) {
             await validateReviewedDomainSetup(this.env, reviewed);
@@ -364,7 +376,10 @@ export class MailAccount {
             // The command receipt prevents duplicate application after a lost response.
             recoveryId = `domain-setup:${context.commandOperationId}`;
             state.objects.PrivateConfig ??= {};
-            this.store('PrivateConfig', { id: recoveryId, domainId: domain.id, actorId: context.actor.id, createdAt: new Date().toISOString(), status: 'pending', proposal: clone(reviewed), completed: [] });
+            const previous = latestRecovery();
+            const continuing = previous && previous.status !== 'complete';
+            const originalRecoveryId = continuing ? previous.originalRecoveryId || previous.id : recoveryId;
+            this.store('PrivateConfig', { id: recoveryId, domainId: domain.id, actorId: context.actor.id, createdAt: new Date().toISOString(), createdSequence: state.sequence, originalRecoveryId, ...(continuing ? { previousRecoveryId: previous.id } : {}), status: 'pending', proposal: clone(reviewed), completed: [] });
             this.save();
             stage = 'dns';
             step = 'applyDns';
@@ -393,7 +408,13 @@ export class MailAccount {
           step = 'registerAddresses';
           await this.syncDirectory(verified, context);
           step = 'connectRouting';
-          if (reviewed) await connectReviewedDomainRouting(this.env, reviewed);
+          if (reviewed) {
+            const completed = await connectReviewedDomainRouting(this.env, reviewed);
+            if (recoveryId) {
+              this.store('PrivateConfig', { ...state.objects.PrivateConfig[recoveryId], completed: [...new Set([...(state.objects.PrivateConfig[recoveryId].completed || []), ...completed])] });
+              this.save();
+            }
+          }
           else await connectDomainRouting(this.env, domain.name, domain.zoneId, this.env.MAIL_INGRESS_WORKER);
           step = 'verifyFinalDns';
           const finalPlan = await fetchDomainDnsPlan(this.env, domain.name, domain.zoneId, sendingSubdomainId);
@@ -408,11 +429,16 @@ export class MailAccount {
           const reason = error instanceof Error ? error.message : '';
           // Only our own fixed diagnostic codes leave this boundary. Exception
           // messages, request headers, provider bodies and credentials are never logged.
-          const knownCodes = new Set(['domainReviewStale', 'domainReviewBlocked', 'domainReviewTooLarge', 'existingCatchAllRouteNeedsManualReview', 'existingRecipientRouteNeedsManualReview', 'dnsPlanStale', 'domainSetupNotConfigured', 'cloudflareApiFailure', 'invalidProviderResponse', 'invalidProviderDnsResponse', 'invalidDnsResponse', 'invalidIngressWorker', 'invalidDomain', 'invalidZoneId', 'invalidSendingSubdomainId', 'zoneDomainMismatch', 'dnsPaginationLimit', 'routingPaginationLimit', 'invalidMailDnsRequirement', 'providerRequirementsIncomplete', 'providerSpfRequirementsConflict', 'recordOutsideDomain', 'dnsPlanHasConflicts', 'dnsPlanInvalid']);
+          const knownCodes = new Set(['domainReviewStale', 'domainReviewBlocked', 'domainReviewTooLarge', 'existingCatchAllRouteNeedsManualReview', 'existingRecipientRouteNeedsManualReview', 'dnsPlanStale', 'domainSetupNotConfigured', 'cloudflareApiFailure', 'invalidProviderResponse', 'invalidProviderDnsResponse', 'invalidDnsResponse', 'invalidIngressWorker', 'invalidDomain', 'invalidZoneId', 'invalidSendingSubdomainId', 'zoneDomainMismatch', 'dnsPaginationLimit', 'routingPaginationLimit', 'invalidMailDnsRequirement', 'providerRequirementsIncomplete', 'providerSpfRequirementsConflict', 'recordOutsideDomain', 'dnsPlanHasConflicts', 'dnsPlanInvalid', 'dnsRecordProtected', 'providerTimeout', 'providerUnavailable', 'missingDnsRecordId']);
           const code = knownCodes.has(reason) || /^cloudflareHttp[1-5][0-9]{2}$/.test(reason) ? reason : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'providerTimeout' : 'providerUnavailable';
           if (error instanceof DomainProviderError && error.providerStep) step = error.providerStep;
           diagnostics = { stage, step, code, ...(error instanceof DomainProviderError && error.providerCodes.length ? { providerCodes: error.providerCodes } : {}) };
           console.warn('Mail domain setup failed', diagnostics);
+          if (recoveryId && state.objects.PrivateConfig?.[recoveryId]) {
+            const recovery = state.objects.PrivateConfig[recoveryId];
+            this.store('PrivateConfig', { ...recovery, status: 'unknown', completed: [...new Set([...(recovery.completed || []), ...(error instanceof DomainProviderError ? error.completed || [] : [])])] });
+            this.save();
+          }
 
           if (['existingCatchAllRouteNeedsManualReview', 'existingRecipientRouteNeedsManualReview'].includes(reason)) { invalidate(false); return answer('blocked', 'This domain has an active mail route owned by another application. Review it before connecting EnoughMail.'); }
           if (['domainReviewStale', 'domainReviewBlocked'].includes(reason)) return answer('blocked', 'The reviewed configuration changed or still contains a protected record. Review the latest changes before continuing.');

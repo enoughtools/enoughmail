@@ -52,19 +52,17 @@ This builds and checks the web and ingress Workers without provisioning or deplo
 
 ## Add domains in the app
 
-Domains must already be active Cloudflare zones in the configured account, accessible to the runtime API token. You can add additional domains after deployment without changing Worker configuration.
+Domains must already be active Cloudflare zones in the configured account, accessible to the runtime API token. You can add domains after deployment without changing Worker configuration.
 
-For each domain, in **Settings & domains → Domains**:
+1. Open **Domains** in settings and add or select the domain. **Review setup** verifies the installation owner's domain approval and prepares or reuses its sending identity.
+2. Review the exact DNS additions, updates and removals, plus the current catch-all and recipient routes that would be disabled. Matching required MX records are preserved. Conflicting protected records block setup until resolved in Cloudflare.
+3. In **Email addresses**, select the destination inbox and add or move its addresses. Enable **Unmatched-address delivery** there if that inbox should accept unconfigured recipients at the domain.
+4. Return to the domain review, refresh it after any configuration changes, download the review, acknowledge the changes and choose **Apply reviewed changes**.
+5. EnoughMail saves recovery evidence, applies the reviewed DNS changes, and verifies DNS and sending before disabling the reviewed forwarding routes and switching receiving to its ingress Worker. If setup remains pending, inspect its details and refresh the review before continuing.
 
-1. Add its domain name and Cloudflare zone ID. Choose whether unmatched addresses deliver to this mail account. Save.
-2. **Approve domain** as the installation owner. The app verifies the zone's name and Cloudflare account, and records an approval scoped to this Mail account.
-3. **Prepare sending**. Mail creates or reuses the provider's sending identity; you do not need to obtain its ID separately.
-4. Open **DNS records**, review the proposed changes and apply them. Mail preserves unrelated DNS and refuses conflicting MX/CNAME records.
-5. **Verify** the domain. Sending stays disabled until DNS verification succeeds.
-6. **Connect receiving** to the installation's ingress Worker. This enables Cloudflare Email Routing and its catch-all Worker destination. Mail refuses to replace an active catch-all belonging to another service. Existing explicit Cloudflare routing rules retain their precedence; review those in Cloudflare if they intercept an intended address.
-7. Add sending addresses in **Identities**, or enable unmatched-address delivery. The private directory rejects recipients that have no enabled identity, configured recipient or catch-all account.
+Existing messages remain with their current provider. DNS propagation can affect delivery while setup is pending. The original backup remains available across attempts to finish an incomplete setup; restoration is manual. See the [domain adoption guide](../../docs/domain-adoption.md) for review and recovery details.
 
-Repeat for each domain, using one account for several domains or creating separate accounts. Mail has no configured domain-count limit; Cloudflare's account and API limits apply. Sending configuration and DNS propagate asynchronously, so verification can require a later retry.
+Repeat for each domain. Domains are managed across your authorized inboxes; recipient assignments belong in **Email addresses**. Cloudflare's account and API limits apply.
 
 ## Additional users and optional features
 

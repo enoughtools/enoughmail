@@ -25,3 +25,7 @@
 .mail-domain-setup-review .mail-setup-route h4{margin-top:0}
 .mail-domain-setup-review .mail-setup-route dl{display:grid;gap:8px;margin:8px 0 0}
 .mail-domain-setup-review .mail-setup-route dd{font-size:13px;font-weight:400;margin:2px 0 0}
+.mail-domain-setup-review [data-slot="alert-title"]{margin:0;font-size:14px;line-height:1.5}
+.mail-domain-setup-review .mail-setup-diagnostics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0 0}
+.mail-domain-setup-review .mail-setup-diagnostics dd{font-size:13px;font-weight:400;margin:3px 0 0;overflow-wrap:anywhere}
+@media(max-width:640px){.mail-domain-setup-review .mail-setup-diagnostics{grid-template-columns:1fr}}

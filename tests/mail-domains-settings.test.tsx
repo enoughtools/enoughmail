@@ -32,6 +32,7 @@ test('domain review dispatches to its owning account and read-only records have 
  const rows = host.querySelectorAll('.mail-settings-list li'); expect(rows).toHaveLength(2);
  expect(rows[1].querySelector('button')).toBeNull();
  await act(async () => (rows[0].querySelector('button') as HTMLElement).click());
+ expect((fetch as any).mock.calls.find((c: any[]) => c[0].includes('/approval?'))[1].method).toBe('GET');
  expect(client.call).toHaveBeenCalledWith('Domain/setup', { domainId: 'same-local-id', reviewOnly: true }, 'a');
  expect(JSON.parse((fetch as any).mock.calls.find((c: any[]) => c[0].endsWith('/approve'))[1].body).accountId).toBe('a');
 });

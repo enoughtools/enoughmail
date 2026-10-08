@@ -29,6 +29,8 @@ npm run mail:configure -- \
 
 Repeat `npm run mail:deploy` to update the same installation. Keep generated configuration and resource names stable; do not delete Durable Objects or buckets containing mail. `npm run mail:deploy -- --dry-run` bundles without provisioning (Docker scanner validation requires a real deployment).
 
+Already receiving mail on your domain? Follow the [domain adoption guide](docs/domain-adoption.md) to review existing DNS and forwarding routes, assign addresses to inboxes, and switch delivery with a recovery backup.
+
 ## What is included
 
 - Multiple inboxes, labels, search, rules, contacts, templates and delegated access.

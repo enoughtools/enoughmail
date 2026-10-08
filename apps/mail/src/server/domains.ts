@@ -1,5 +1,5 @@
 /** Mail-owned DNS onboarding. Credentials are server secrets scoped to the configured zone. */
-export interface DnsRecord { id?: string; type: string; name: string; content: string; priority?: number; ttl?: number; proxied?: boolean }
+export interface DnsRecord { id?: string; type: string; name: string; content: string; priority?: number; ttl?: number; proxied?: boolean; locked?: boolean }
 export interface DnsRecordEvidence { content: string; rawLength: number; canonicalLength: number; quoteCount: number; backslashCount: number }
 export interface DomainDnsConflictDetail { type: string; name: string; required: DnsRecordEvidence; existing: (DnsRecordEvidence & { firstDifference: number })[] }
 export interface DomainDnsPlan {
@@ -22,7 +22,7 @@ const equal = (a: DnsRecord, b: DnsRecord) => a.type === b.type && nameOf(a.name
   (a.type === 'TXT' ? txt(a.content) === txt(b.content) : nameOf(a.content) === nameOf(b.content)) &&
   (a.type !== 'MX' || a.priority === b.priority);
 const snapshotOf = (records: DnsRecord[]) => JSON.stringify(records.map(r => ({ id: r.id, type: r.type, name: nameOf(r.name), content: r.content,
-  priority: r.priority, ttl: r.ttl, proxied: r.proxied })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
+  priority: r.priority, ttl: r.ttl, proxied: r.proxied, locked: r.locked })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
 export function planDomainDns(domain: string, existing: DnsRecord[], providerRequirements: DnsRecord[]): DomainDnsPlan {
   domain = nameOf(domain);
   if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,63}$/.test(domain)) throw new Error('invalidDomain');
@@ -105,10 +105,16 @@ export function planDomainDns(domain: string, existing: DnsRecord[], providerReq
   }
   return plan;
 }
-export type RoutingSetupStep = 'enableRoutingDns' | 'setCatchAll';
+export type RoutingSetupStep = 'enableRoutingDns' | 'setCatchAll' | 'removeDns' | 'applyDns' | 'disableRecipientRule';
 export class DomainProviderError extends Error {
-  constructor(message: string, readonly providerCodes: number[], readonly providerStep?: RoutingSetupStep) { super(message); }
+  constructor(message: string, readonly providerCodes: number[], readonly providerStep?: RoutingSetupStep, readonly completed?: string[]) { super(message); }
 }
+const mutationError = (error: unknown, step: RoutingSetupStep, completed?: string[]): DomainProviderError => {
+  if (error instanceof DomainProviderError) return new DomainProviderError(error.message, error.providerCodes, error.providerStep || step, completed);
+  const code = error instanceof Error && ['domainReviewStale', 'dnsPlanStale', 'dnsPlanInvalid', 'dnsRecordProtected', 'missingDnsRecordId'].includes(error.message)
+    ? error.message : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'providerTimeout' : 'providerUnavailable';
+  return new DomainProviderError(code, [], step, completed);
+};
 const providerCodes = (value: unknown): number[] => {
   const errors = value && typeof value === 'object' ? (value as { errors?: unknown }).errors : undefined;
   return Array.isArray(errors) ? errors.map(error => error && typeof error === 'object' ? error.code : undefined).filter((code): code is number => Number.isSafeInteger(code) && code >= 0 && code <= 1_000_000_000).slice(0, 5) : [];
@@ -146,7 +152,7 @@ export async function fetchDomainDnsPlan(env: DomainEnvironment, domain: string,
   return planDomainDns(domain, await listDomainDns(env, zoneId, fetcher), [...routing, ...sendingRecords]);
 }
 /** Caller must enforce current workspace/resource/domain authority and idempotent command receipts. */
-export async function applyDomainDns(env: DomainEnvironment, zoneId: string, plan: DomainDnsPlan, fetcher: typeof fetch = fetch): Promise<{ applied: number; status: 'applied' | 'partial' | 'unknown'; error?: string }> {
+export async function applyDomainDns(env: DomainEnvironment, zoneId: string, plan: DomainDnsPlan, fetcher: typeof fetch = fetch): Promise<{ applied: number; status: 'applied' | 'partial' | 'unknown'; error?: string; providerCodes?: number[]; providerStep?: RoutingSetupStep }> {
   if (plan.conflicts.length) throw new Error('dnsPlanHasConflicts');
   const zone = await api<{ name: string }>(env, scope(zoneId), fetcher);
   if (nameOf(zone.name) !== plan.domain) throw new Error('zoneDomainMismatch');
@@ -154,12 +160,13 @@ export async function applyDomainDns(env: DomainEnvironment, zoneId: string, pla
   if (snapshotOf(current) !== plan.snapshot) throw new Error('dnsPlanStale');
   const recomputed = planDomainDns(plan.domain, current, plan.requirements);
   if (JSON.stringify(recomputed.changes) !== JSON.stringify(plan.changes)) throw new Error('dnsPlanInvalid');
+  if (plan.changes.some(change => change.previous?.locked)) throw new Error('dnsRecordProtected');
   let applied = 0;
   for (const change of plan.changes) {
     try { const { id, ...record } = change.record;
       if (change.kind === 'update' && !id) throw new Error('missingDnsRecordId');
-      await api(env, `${scope(zoneId)}/dns_records${change.kind === 'update' ? `/${encodeURIComponent(id!)}` : ''}`, fetcher, change.kind === 'update' ? 'PATCH' : 'POST', record); applied++;
-    } catch { return { applied, status: 'unknown', error: 'dnsMutationOutcomeUnknownReplanBeforeRetry' }; }
+      await api(env, `${scope(zoneId)}/dns_records${change.kind === 'update' ? `/${encodeURIComponent(id!)}` : ''}`, fetcher, change.kind === 'update' ? 'PATCH' : 'POST', record, 'applyDns'); applied++;
+    } catch (error) { const failure = mutationError(error, 'applyDns'); return { applied, status: 'unknown', error: failure.message, providerStep: failure.providerStep, ...(failure.providerCodes.length ? { providerCodes: failure.providerCodes } : {}) }; }
   } return { applied, status: 'applied' };
 }
 export function verifyDomainDns(plan: DomainDnsPlan, current: DnsRecord[]): { ready: boolean; checks: { type: string; name: string; status: 'ready' | 'missing' | 'conflict' }[]; warnings: string[] } {
@@ -219,9 +226,12 @@ export async function prepareSendingDomain(env: DomainEnvironment, domain: strin
   const path = `${scope(zoneId)}/email/sending/subdomains`;
   const current = await api<{ name: string; tag: string; enabled: boolean }[]>(env, path, fetcher);
   if (!Array.isArray(current)) throw new Error('invalidProviderResponse');
-  const existing = current.find(item => nameOf(item.name) === domain && item.enabled);
-  const result = existing ?? await api<{ name: string; tag: string }>(env, path, fetcher, 'POST', { name: domain });
+  const existing = current.find(item => nameOf(item.name) === domain);
+  // POST re-enables a disabled sending domain. Its existing identity must stay
+  // stable, because a reviewed DNS proposal is bound to that identity's key.
+  const result = existing?.enabled ? existing : await api<{ name: string; tag: string }>(env, path, fetcher, 'POST', { name: domain });
   if (nameOf(result.name) !== domain || !/^[a-f0-9]{32}$/i.test(result.tag)) throw new Error('invalidProviderResponse');
+  if (existing && result.tag !== existing.tag) throw new Error('invalidProviderResponse');
   return result.tag;
 }
 
@@ -295,8 +305,17 @@ async function routingSnapshot(env: DomainEnvironment, zoneId: string, fetcher: 
     if (batch.length < 100) break;
     if (page === 100) throw new Error('routingPaginationLimit');
   }
-  const normalize = (rule: DomainRoutingRule): DomainRoutingRule => ({ ...(ruleId(rule) ? { id: ruleId(rule) } : {}), ...writableRule({ ...rule, matchers: rule.matchers || [{ type: 'all' }], actions: rule.actions || [] }) });
-  return { catchAll: normalize(catchAll), rules: rules.map(normalize).sort((a, b) => (ruleId(a) || '').localeCompare(ruleId(b) || '')) };
+  const normalize = (rule: DomainRoutingRule): DomainRoutingRule => ({ ...(ruleId(rule) ? { id: ruleId(rule) } : {}), ...writableRule({ ...rule, source: rule.source || 'api', matchers: rule.matchers || [{ type: 'all' }], actions: rule.actions || [] }) });
+  const normalizedCatchAll = normalize(catchAll);
+  // Cloudflare can include the catch-all in the general rules list. Retain it
+  // once, so recipient-rule disabling cannot change the reviewed catch-all
+  // before the final cutover. When an older response omits its identifier,
+  // require the complete all-address rule to match rather than hiding a
+  // distinct rule whose recipient policy still needs review.
+  const duplicatesCatchAll = (rule: DomainRoutingRule) => ruleId(rule) && ruleId(normalizedCatchAll)
+    ? ruleId(rule) === ruleId(normalizedCatchAll)
+    : rule.matchers.length === 1 && rule.matchers[0].type === 'all' && canonical(writableRule(rule)) === canonical(writableRule(normalizedCatchAll));
+  return { catchAll: normalizedCatchAll, rules: rules.map(normalize).filter(rule => !duplicatesCatchAll(rule)).sort((a, b) => (ruleId(a) || '').localeCompare(ruleId(b) || '')) };
 }
 /** Build a bounded, exact proposal. Only mail records may be replaced; website
  * records and valid existing DMARC policies remain outside automatic takeover. */
@@ -318,6 +337,7 @@ export async function reviewDomainSetup(env: DomainEnvironment, domain: string, 
   const plan = planDomainDns(domain, records.filter(record => !removeRecords.includes(record)), original.requirements);
   const disableRules = routing.rules.filter(rule => rule.enabled && !ownsRule(rule, worker));
   const blockers = [...plan.conflicts];
+  for (const record of [...removeRecords, ...plan.changes.flatMap(change => change.previous ? [change.previous] : [])].filter(record => record.locked)) blockers.push(`Cloudflare protects the ${record.type} record at ${record.name}. Review its Email Routing DNS settings before replacing or updating it.`);
   if (disableRules.some(rule => rule.source === 'wrangler' && !rule.owner_worker_tag)) blockers.push('A Worker-managed route is missing its owner identifier. Update that route in its Worker configuration before continuing.');
   if (removeRecords.some(record => !/^[a-f0-9]{32}$/i.test(record.id || ''))) blockers.push('A conflicting DNS record has no valid provider identifier. Review it in Cloudflare.');
   if (disableRules.some(rule => !/^[a-f0-9]{32}$/i.test(ruleId(rule) || ''))) blockers.push('An existing route has no valid provider identifier. Review it in Cloudflare.');
@@ -340,30 +360,37 @@ export async function applyReviewedDomainSetup(env: DomainEnvironment, reviewed:
   const latest = await validateReviewedDomainSetup(env, reviewed, fetcher);
   const completed: string[] = [];
   try {
-    for (const record of latest.removeRecords) { await api(env, `${scope(latest.zoneId)}/dns_records/${record.id}`, fetcher, 'DELETE'); completed.push(`remove-dns:${record.id}`); }
+    for (const record of latest.removeRecords) { await api(env, `${scope(latest.zoneId)}/dns_records/${record.id}`, fetcher, 'DELETE', undefined, 'removeDns'); completed.push(`remove-dns:${record.id}`); }
     // Re-check the exact remaining DNS before writes. A concurrent provider edit
     // stops here with the retained recovery evidence available to the owner.
     const current = await listDomainDns(env, latest.zoneId, fetcher);
     if (snapshotOf(current) !== latest.plan.snapshot) throw new Error('domainReviewStale');
     const applied = await applyDomainDns(env, latest.zoneId, latest.plan, fetcher);
-    if (applied.status !== 'applied') return { status: 'unknown', completed: [...completed, `dns-writes-confirmed:${applied.applied}`] };
+    if (applied.status !== 'applied') throw new DomainProviderError(applied.error || 'providerUnavailable', applied.providerCodes || [], applied.providerStep || 'applyDns', [...completed, `dns-writes-confirmed:${applied.applied}`]);
     completed.push(`dns-writes-confirmed:${applied.applied}`);
     if (canonical(await routingSnapshot(env, latest.zoneId, fetcher)) !== latest.routingSnapshot) throw new Error('domainReviewStale');
-    for (const rule of latest.disableRules) { await api(env, `${scope(latest.zoneId)}/email/routing/rules/${ruleId(rule)}`, fetcher, 'PUT', writableRule({ ...rule, enabled: false })); completed.push(`disable-route:${ruleId(rule)}`); }
-    // The catch-all is replaced only after safe DNS is verified by the account.
+    // Keep forwarding intact while DNS and sending verification are pending.
+    // Recipient routes and catch-all change together at the final cutover.
     return { status: 'applied', completed };
-  } catch { return { status: 'unknown', completed }; }
+  } catch (error) { throw mutationError(error, 'applyDns', error instanceof DomainProviderError && error.completed ? error.completed : completed); }
 }
-/** Re-check the reviewed catch-all immediately before replacing it. Other
- * routes remain subject to normal conflict checks after reviewed disables. */
-export async function connectReviewedDomainRouting(env: DomainEnvironment, reviewed: DomainSetupProposal, fetcher: typeof fetch = fetch): Promise<void> {
+/** Called only after DNS, sending and directory verification. Re-check the
+ * entire reviewed route set immediately before the bounded delivery cutover. */
+export async function connectReviewedDomainRouting(env: DomainEnvironment, reviewed: DomainSetupProposal, fetcher: typeof fetch = fetch): Promise<string[]> {
   const current = await routingSnapshot(env, reviewed.zoneId, fetcher);
   const expected = JSON.parse(reviewed.routingSnapshot) as { catchAll: DomainRoutingRule; rules: DomainRoutingRule[] };
-  expected.rules = expected.rules.map(rule => reviewed.disableRules.some(disabled => ruleId(disabled) === ruleId(rule)) ? { ...rule, enabled: false } : rule);
   if (canonical(current) !== canonical(expected)) throw new Error('domainReviewStale');
-  if (current.rules.some(rule => rule.enabled && !ownsRule(rule, reviewed.worker))) throw new Error('domainReviewStale');
+  if (current.rules.some(rule => rule.enabled && !ownsRule(rule, reviewed.worker) && !reviewed.disableRules.some(disabled => canonical(disabled) === canonical(rule)))) throw new Error('domainReviewStale');
   const path = `${scope(reviewed.zoneId)}/email/routing`;
-  const settings = await api<{ enabled?: boolean }>(env, path, fetcher);
-  if (settings.enabled !== true) await api(env, `${path}/dns`, fetcher, 'POST', undefined, 'enableRoutingDns');
-  await api(env, `${path}/rules/catch_all`, fetcher, 'PUT', { name: 'EnoughMail', enabled: true, matchers: [{ type: 'all' }], actions: [{ type: 'worker', value: [reviewed.worker] }] }, 'setCatchAll');
+  const completed: string[] = [];
+  try {
+    const settings = await api<{ enabled?: boolean }>(env, path, fetcher);
+    if (settings.enabled !== true) { await api(env, `${path}/dns`, fetcher, 'POST', undefined, 'enableRoutingDns'); completed.push('enable-routing-dns'); }
+    for (const rule of reviewed.disableRules) { await api(env, `${path}/rules/${ruleId(rule)}`, fetcher, 'PUT', writableRule({ ...rule, enabled: false }), 'disableRecipientRule'); completed.push(`disable-route:${ruleId(rule)}`); }
+    expected.rules = expected.rules.map(rule => reviewed.disableRules.some(disabled => ruleId(disabled) === ruleId(rule)) ? { ...rule, enabled: false } : rule);
+    if (canonical(await routingSnapshot(env, reviewed.zoneId, fetcher)) !== canonical(expected)) throw new Error('domainReviewStale');
+    await api(env, `${path}/rules/catch_all`, fetcher, 'PUT', { name: 'EnoughMail', enabled: true, matchers: [{ type: 'all' }], actions: [{ type: 'worker', value: [reviewed.worker] }] }, 'setCatchAll');
+    completed.push('set-catch-all');
+    return completed;
+  } catch (error) { throw mutationError(error, 'disableRecipientRule', completed); }
 }
