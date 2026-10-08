@@ -49,7 +49,79 @@ test('Domains has no inbox selector; Email addresses restores switching and load
 
 test('existing domains from other inboxes remain available for address assignment', async () => {
  const client = fixture();
- const host = await render(<DomainForInbox client={client} accountId="a" configured={[{id:'same-local-id',name:'a.test'}]} onChanged={() => {}} onBusy={() => {}} />);
+ const host = await render(<DomainForInbox client={client} accountId="a" configured={[{id:'same-local-id',name:'a.test'}]} onChanged={() => {}} onDeliveryChanged={() => {}} onBusy={() => {}} />);
  const options = [...host.querySelectorAll('option')].map(option => option.value);
  expect(options).toContain('b.test'); expect(options).not.toContain('a.test');
+});
+
+function deliveryFixture(save: () => Promise<unknown>) {
+ const client = fixture(); const original = client.call;
+ client.call = vi.fn(async (method, args, id) => {
+  if (method === 'Domain/get' && id === 'a') return { list: [
+   { id: 'first-domain', name: 'first.test', zoneId: 'first-zone', catchAllAccountId: null },
+   { id: 'second-domain', name: 'second.test', zoneId: 'second-zone', catchAllAccountId: null },
+  ] };
+  if (method === 'Domain/set') return save();
+  return original(method, args, id);
+ }) as typeof client.call;
+ return client;
+}
+function deliveryPanel(host: HTMLElement) {
+ return [...host.querySelectorAll('summary')].find(element => element.textContent === 'Unmatched-address delivery')!.closest('details')!;
+}
+async function confirmDelivery(row: Element) {
+ await act(async () => (row.querySelector('button') as HTMLButtonElement).click());
+ const dialog = document.querySelector('[role="alertdialog"]')!;
+ await act(async () => ([...dialog.querySelectorAll('button')].find(button => button.textContent === 'Confirm') as HTMLButtonElement).click());
+}
+test('successive delivery saves preserve the expanded settings, scroll and inbox without reloading', async () => {
+ let finish!: () => void;
+ const pendingSave = new Promise<void>(resolve => { finish = resolve; });
+ const save = vi.fn().mockImplementationOnce(() => pendingSave).mockResolvedValue({});
+ const client = deliveryFixture(save);
+ const host = await render(<Settings client={client} accountId="a" initialSection="Identities" onClose={() => {}} />);
+ const panel = deliveryPanel(host); panel.open = true;
+ const body = host.querySelector('.mail-settings-body') as HTMLElement; body.scrollTop = 240;
+ const inbox = host.querySelector('[aria-label="Settings inbox"]') as HTMLSelectElement;
+ const rows = panel.querySelectorAll('.mail-inline-actions');
+ const readCount = () => vi.mocked(client.call).mock.calls.filter(([method]) => method.endsWith('/get')).length;
+ const initialReads = readCount();
+ await confirmDelivery(rows[0]);
+ expect(rows[0].textContent).toContain('first.test · Off');
+ expect((rows[1].querySelector('button') as HTMLButtonElement).disabled).toBe(true);
+ expect(inbox.disabled).toBe(true);
+ await act(async () => finish());
+ expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
+ expect(body.scrollTop).toBe(240); expect(inbox.value).toBe('a');
+ expect(rows[0].textContent).toContain('first.test · Enabled');
+ expect((rows[1].querySelector('button') as HTMLButtonElement).disabled).toBe(false);
+ expect(host.textContent).not.toContain('Loading settings');
+ await confirmDelivery(rows[1]);
+ expect(rows[1].textContent).toContain('second.test · Enabled');
+ await confirmDelivery(rows[0]);
+ expect(rows[0].textContent).toContain('first.test · Off');
+ expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
+ expect(body.scrollTop).toBe(240); expect(inbox.value).toBe('a');
+ expect(readCount()).toBe(initialReads);
+ expect(vi.mocked(client.call).mock.calls.filter(([method]) => method === 'Domain/set')).toEqual([
+  ['Domain/set', { update: { 'first-domain': { catchAllAccountId: 'a' } } }, 'a'],
+  ['Domain/set', { update: { 'second-domain': { catchAllAccountId: 'a' } } }, 'a'],
+  ['Domain/set', { update: { 'first-domain': { catchAllAccountId: null } } }, 'a'],
+ ]);
+});
+test('a rejected delivery save keeps its status and expanded panel and can be retried', async () => {
+ const save = vi.fn().mockRejectedValueOnce(new Error('Delivery could not be saved.')).mockResolvedValue({});
+ const client = deliveryFixture(save);
+ const host = await render(<Settings client={client} accountId="a" initialSection="Identities" onClose={() => {}} />);
+ const panel = deliveryPanel(host); panel.open = true;
+ const row = panel.querySelector('.mail-inline-actions')!;
+ await confirmDelivery(row);
+ expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
+ expect(row.textContent).toContain('first.test · Off');
+ expect(host.querySelector('[role="alert"]')?.textContent).toContain('Delivery could not be saved.');
+ expect((row.querySelector('button') as HTMLButtonElement).disabled).toBe(false);
+ await confirmDelivery(row);
+ expect(row.textContent).toContain('first.test · Enabled');
+ expect(host.querySelector('[role="alert"]')).toBeNull();
+ expect(deliveryPanel(host)).toBe(panel); expect(panel.open).toBe(true);
 });
