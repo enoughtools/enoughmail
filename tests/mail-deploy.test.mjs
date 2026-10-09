@@ -37,3 +37,22 @@ test('standalone deployment config is isolated, complete and refuses to overwrit
     assert.equal(await readFile(join(directory, 'mail.json'), 'utf8'), before);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+
+test('standalone MCP is configured on a bounded companion hostname with private consent', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'mail-mcp-config-'));
+  try {
+    const args = ['scripts/deploy-mail.mjs', '--configure', '--config-dir', directory, '--account', 'a'.repeat(32), '--owner', 'owner', '--team', 'example.cloudflareaccess.com', '--audience', 'aud', '--hostname', 'mail.example.com', '--name', 'mail-mcp-test', '--mcp-hostname', 'mail-connect.example.com', '--mcp-redirect-uri', 'https://chatgpt.com/connector_platform_oauth_redirect', '--mcp-callback-origins', 'https://callbacks.example.com'];
+    const result = spawnSync(process.execPath, args, {encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);
+    const app=JSON.parse(await readFile(join(directory,'mail.json'),'utf8'));
+    const ingress=JSON.parse(await readFile(join(directory,'ingress.json'),'utf8'));
+    assert.equal(app.vars.MAIL_MCP_PUBLIC_ORIGIN,'https://mail-connect.example.com');
+    assert.equal(app.vars.MAIL_MCP_WORKSPACE_ORIGIN,'https://mail.example.com');
+    assert.equal(app.vars.MAIL_MCP_CALLBACK_ORIGINS,'https://callbacks.example.com');
+    assert.equal(ingress.vars.MAIL_MCP_CLIENT_ID,'enoughmail-chatgpt');
+    assert.deepEqual(ingress.routes,[{pattern:'mail-connect.example.com',custom_domain:true}]);
+    assert(!ingress.services?.length);
+    assert(!ingress.durable_objects.bindings.some(binding=>binding.binding==='CORE'));
+  } finally { await rm(directory,{recursive:true,force:true}); }
+});

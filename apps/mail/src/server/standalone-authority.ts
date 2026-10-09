@@ -12,6 +12,7 @@ const uuid = (value: unknown): value is string => typeof value === 'string' && /
 const scope = { organizationId: 'enough-mail', workspaceId: 'standalone' };
 type Account = NativeResource & { grants: { actorId: string; actions: string[] }[] };
 type Lease = { accountId: string; actorId: string; jobId: string; actions: string[]; expiresAt: number };
+type ClientGrant = Omit<Lease, 'accountId'>;
 class Denied extends Error { constructor(readonly status = 403, readonly code = 'permission_denied') { super(code); } }
 
 /** Mail-owned authority, reachable exclusively through a Durable Object binding.
@@ -37,7 +38,7 @@ export class StandaloneMailAuthority {
   async fetch(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url), path = url.pathname;
-      const internal = path.startsWith('/internal/native-resources/');
+      const internal = path.startsWith('/internal/native-resources/') || path.startsWith('/internal/mail-client-grants/');
       const body: any = request.method === 'GET' ? {} : await request.json();
       let principal: Principal | undefined;
       if (!internal) {
@@ -46,6 +47,48 @@ export class StandaloneMailAuthority {
       }
       return await this.ctx.storage.transaction(async storage => {
         const actorId = principal?.id ?? '';
+        // A Mail-owned workspace connection discovers accounts through current
+        // admission/grants. Account commands still receive exact native leases.
+        if (path === '/api/mail-client-grants' && request.method === 'POST') {
+          if (!uuid(body.operationId) || !uuid(body.jobId) || !Array.isArray(body.actions) || !body.actions.length || !body.actions.every((action: string) => actions.includes(action)) || !Number.isSafeInteger(body.expiresAt) || body.expiresAt <= Date.now() || body.expiresAt > Date.now() + 30 * 86400000) throw new Denied(400, 'invalid_client_grant');
+          const key = `client-grant-command:${actorId}:${body.operationId}`, canonical = JSON.stringify(body);
+          const previous = await storage.get<{ canonical: string; lease: string }>(key);
+          if (previous) { if (previous.canonical !== canonical) throw new Denied(409, 'operation_conflict'); return Response.json({ lease: previous.lease, context: { ...scope, actorId } }); }
+          const lease = crypto.randomUUID() + crypto.randomUUID();
+          await storage.put('client-grant:' + lease, { actorId, jobId: body.jobId, actions: [...new Set<string>(body.actions)], expiresAt: body.expiresAt } satisfies ClientGrant);
+          await storage.put(key, { canonical, lease });
+          return Response.json({ lease, context: { ...scope, actorId } });
+        }
+        if (path.startsWith('/internal/mail-client-grants/')) {
+          if (request.method !== 'POST') throw new Denied(405);
+          const grant = typeof body.lease === 'string' ? await storage.get<ClientGrant>('client-grant:' + body.lease) : undefined;
+          if (!grant || grant.jobId !== body.jobId || grant.expiresAt <= Date.now() || !this.role(grant.actorId)) throw new Denied();
+          const context = { ...scope, actorId: grant.actorId };
+          if (path.endsWith('/revalidate')) return Response.json({ context, actions: grant.actions, expiresAt: grant.expiresAt });
+          if (path.endsWith('/accounts')) {
+            const ids = await storage.get<string[]>('account-ids') ?? [];
+            const accounts = await Promise.all(ids.map(id => storage.get<Account>('account:' + id)));
+            return Response.json({ context, resources: accounts.filter((account): account is Account => !!account).map(account => ({ ...this.publicAccount(account, grant.actorId), effectiveActions: this.effective(account, grant.actorId).filter(action => grant.actions.includes(action)) })).filter(account => account.effectiveActions.length) });
+          }
+          if (path.endsWith('/account')) {
+            if (!uuid(body.accountId)) throw new Denied(400);
+            const account = await storage.get<Account>('account:' + body.accountId);
+            if (!account) throw new Denied(404, 'account_not_found');
+            const effectiveActions = this.effective(account, grant.actorId).filter(action => grant.actions.includes(action));
+            if (!effectiveActions.length) throw new Denied();
+            // Stable per-account proof: ordinary discovery/refresh does not
+            // invalidate a subscription. Scope changes obtain a new proof.
+            const key = `client-account:${body.lease}:${account.id}:${JSON.stringify(effectiveActions)}`;
+            let lease = await storage.get<string>(key);
+            if (!lease) {
+              lease = crypto.randomUUID() + crypto.randomUUID();
+              await storage.put('lease:' + lease, { accountId: account.id, actorId: grant.actorId, jobId: grant.jobId, actions: effectiveActions, expiresAt: grant.expiresAt } satisfies Lease);
+              await storage.put(key, lease);
+            }
+            return Response.json({ context, resource: { ...this.publicAccount(account, grant.actorId), effectiveActions }, lease, jobId: grant.jobId, expiresAt: grant.expiresAt });
+          }
+          throw new Denied(404, 'not_found');
+        }
         if (path === '/api/workspace' && request.method === 'GET') return Response.json({
           ...scope, actor: { id: actorId, kind: 'user' }, membership: { role: this.role(actorId), status: 'active', version: 1 },
           policyVersion: 1, legacyShared: false, actions: [], actionDescriptors: [],

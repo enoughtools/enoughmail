@@ -1,9 +1,10 @@
+import type { MailOAuthEnv } from './server/mcp-oauth';
 import { receiveMail, type CloudflareMailEnvironment } from './server/delivery';
 import type { DirectoryRoute } from './server/directory';
 import { handlePublicClient } from './server/public-client';
 
 interface Namespace { idFromName(name: string): unknown; get(id: unknown): { fetch(request: Request): Promise<Response> } }
-interface IngressEnv extends CloudflareMailEnvironment { MAIL_DIRECTORY: Namespace; MAIL_ACCOUNTS: Namespace; MAIL_CREDENTIALS: Namespace }
+interface IngressEnv extends CloudflareMailEnvironment, MailOAuthEnv { MAIL_DIRECTORY: Namespace; MAIL_ACCOUNTS: Namespace; MAIL_CREDENTIALS: Namespace }
 interface IncomingMessage {
   from: string; to: string; raw: ReadableStream<Uint8Array>;
   headers?: Headers;

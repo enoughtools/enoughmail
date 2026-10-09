@@ -1,3 +1,4 @@
+import { handleMailOAuthConsent, type MailOAuthEnv } from './server/mcp-oauth';
 import { runIdentityTransfer, validateIdentityTransfer, IdentityTransferError } from './server/identity-transfer';
 import { CloudflareDomainDiscovery, DomainDiscoveryError } from './server/domain-discovery';
 import { MAIL_EVENT_TYPES } from './domain/events';
@@ -22,7 +23,7 @@ import { MailPushRegistry, handlePushJmap, type PushAuthorityProof } from './ser
 export { MailAccount, MailDirectory, MailCredentials, MailPushRegistry };
 
 interface AccountNamespace { idFromName(name: string): unknown; get(id: unknown): AssetFetcher; }
-export interface MailEnv extends AuthenticationEnv, MailAuthorityEnvironment {
+export interface MailEnv extends AuthenticationEnv, MailAuthorityEnvironment, MailOAuthEnv {
   ASSETS: AssetFetcher;
   
   MCP_SIGNING_KEY?: string;
@@ -134,7 +135,17 @@ export function createMailWorker(identify: Authenticator = authenticate) {
         }
         const stub = () => env.MAIL_ACCOUNTS.get(env.MAIL_ACCOUNTS.idFromName(account.accountId));
         let response: Response;
-        if (path === '/health') {
+        if (path === '/api/mcp/authorize') {
+          response = await handleMailOAuthConsent(request,env,workspace);
+          const consentResponse = protectResponse(request, response, { api: true });
+          // This product-owned OAuth document permits its validated callback.
+          // Apply its policy after the generic private-workspace defaults.
+          for (const header of ['Content-Security-Policy', 'Referrer-Policy']) {
+            const value = response.headers.get(header);
+            if (value) consentResponse.headers.set(header, value);
+          }
+          return consentResponse;
+        } else if (path === '/health') {
           methodAllowed(request.method, ['GET', 'HEAD']);
           response = json({ ok: true, appId: 'mail' });
         } else if (path === '/api/manifest') {

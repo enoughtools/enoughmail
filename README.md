@@ -39,8 +39,9 @@ Already receiving mail on your domain? Follow the [domain adoption guide](docs/d
 - Draft recovery, submission receipts and explicit handling of uncertain send outcomes.
 - JMAP state updates and opt-in encrypted Web Push notifications, including with the tab closed. Device subscriptions need periodic renewal.
 - Cloudflare Email Routing and Sending integration, domain verification and a private attachment scanner.
+- Optional OAuth MCP connection for ChatGPT, with mail tools and incoming-email webhook triggers. [MCP setup and events](docs/mail-mcp.md).
 
-The browser app stays behind verified identity. A separate bounded ingress receives mail and can expose scoped JMAP client access. No Core deployment or other Enough product is required. Public MCP routing is available only in an integrated Enough installation.
+The browser app stays behind verified identity. A separate bounded ingress receives mail and can expose scoped JMAP client access. No Core deployment or other Enough product is required. The same bounded companion can expose an optional OAuth MCP endpoint for ChatGPT; the private workspace remains protected.
 
 ## Explore the interface
 

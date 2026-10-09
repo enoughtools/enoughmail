@@ -7,6 +7,7 @@ import { Button } from '@open-cloud/ui';
 import { type MailClient } from './jmap';
 
 interface Credential {
+  scope?: 'workspace';
   id: string; name: string; accountId: string; actions: string[];
   expiresAt: number; createdAt: number; revokedAt: number | null; version: number;
 }
@@ -51,7 +52,7 @@ export default function ClientAccess({ client, accountId }: { client: MailClient
   const allowed = capability?.actions || [];
   const canIssue = permissions.some(([action]) => allowed.includes(action));
   const sessionUrl = configuredSessionUrl(info);
-  const currentCredentials = credentials.filter(value => value.accountId === accountId);
+  const currentCredentials = credentials.filter(value => value.scope === 'workspace' || value.accountId === accountId);
 
   async function reload(signal?: AbortSignal) {
     const version = generation.current;
@@ -129,7 +130,7 @@ export default function ClientAccess({ client, accountId }: { client: MailClient
       <h4>Client credentials</h4>
       {!currentCredentials.length ? <p>No client credentials for this account.</p> : <ul className="mail-settings-list">{currentCredentials.map(value => {
         const inactive = Boolean(value.revokedAt) || value.expiresAt <= Date.now();
-        return <li key={value.id}><div><strong>{value.name}</strong><p>{value.actions.map(action => permissions.find(([id]) => id === action)?.[1] || action).join(', ')}</p><p>{value.revokedAt ? 'Revoked' : inactive ? 'Expired' : 'Expires'}{!value.revokedAt && <> · <time dateTime={new Date(value.expiresAt).toISOString()}>{new Date(value.expiresAt).toLocaleString()}</time></>}</p></div>{!value.revokedAt && <Button variant="outline" disabled={busy} onClick={() => void revoke(value)}>Revoke</Button>}</li>;
+        return <li key={value.id}><div><strong>{value.name}</strong>{value.scope === 'workspace' && <p>All accessible accounts, including accounts added later</p>}<p>{value.actions.map(action => permissions.find(([id]) => id === action)?.[1] || action).join(', ')}</p><p>{value.revokedAt ? 'Revoked' : inactive ? 'Expired' : 'Expires'}{!value.revokedAt && <> · <time dateTime={new Date(value.expiresAt).toISOString()}>{new Date(value.expiresAt).toLocaleString()}</time></>}</p></div>{!value.revokedAt && <Button variant="outline" disabled={busy} onClick={() => void revoke(value)}>Revoke</Button>}</li>;
       })}</ul>}
       {canIssue ? <details className="mail-secondary-tools"><summary>Create a client credential</summary><form className="mail-settings-form" onSubmit={issue}>
         <h4>Create a client credential</h4><p>Select only the permissions this client needs. Reading does not permit changes or sending.</p>

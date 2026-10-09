@@ -1,3 +1,4 @@
+import { handleMailOAuth, isMailOAuthPath, type MailOAuthEnv } from './mcp-oauth';
 import { boundedUploadStream, UploadTooLarge } from './bounded-stream';
 import { MailAccessError } from './core';
 import { executeAuthorizedJmap, type JmapRequest, type JmapResponse } from './jmap-router';
@@ -6,22 +7,23 @@ import { boundedBytes, validateCredential, type CredentialsEnv, type Credential 
 const CORE='urn:ietf:params:jmap:core',MAIL='urn:ietf:params:jmap:mail',SEND='urn:ietf:params:jmap:submission';
 const MAX_REQUEST=1048576,MAX_UPLOAD=67108864;
 const supportsMailData=(actions:readonly string[])=>actions.some(action=>['mail.read','mail.draft','mail.edit'].includes(action));
-const allowedPath=(path:string)=>path==='/.well-known/jmap'||['/jmap/session','/jmap/api','/jmap/events'].includes(path)||/^\/jmap\/upload\/[^/]+$/.test(path)||/^\/jmap\/download\/[^/]+\/[^/]+\/[^/]+$/.test(path);
+const allowedPath=(path:string)=>path==='/mcp'||path==='/.well-known/jmap'||['/jmap/session','/jmap/api','/jmap/events'].includes(path)||/^\/jmap\/upload\/[^/]+$/.test(path)||/^\/jmap\/download\/[^/]+\/[^/]+\/[^/]+$/.test(path);
 function fail(code:string,message:string,status=400):never{throw new MailAccessError(code,message,status);}
 function headers(credential:Credential){return new Headers({'X-Mail-Account-Context':JSON.stringify({accountId:credential.accountId,organizationId:credential.organizationId,workspaceId:credential.workspaceId,actor:{id:credential.actorId,actions:credential.actions}}),'Content-Type':'application/json'});}
 function envelope(credential:Credential,body:unknown){return {accountId:credential.accountId,organizationId:credential.organizationId,workspaceId:credential.workspaceId,actor:{id:credential.actorId,actions:credential.actions},authorityProof:{lease:credential.lease,jobId:credential.jobId,expiresAt:credential.expiresAt,actions:[...credential.actions],credentialId:credential.id,credentialVersion:credential.version},request:body};}
 function accountStub(env:CredentialsEnv,credential:Credential){return env.MAIL_ACCOUNTS.get(env.MAIL_ACCOUNTS.idFromName(credential.accountId));}
 /** Public companion exposes only token-authenticated JMAP, never workspace routes. */
-export async function handlePublicClient(request:Request,env:{MAIL_CREDENTIALS?:CredentialsEnv['MAIL_CREDENTIALS']}):Promise<Response>{
+export async function handlePublicClient(request:Request,env:MailOAuthEnv & {MAIL_CREDENTIALS?:CredentialsEnv['MAIL_CREDENTIALS']}):Promise<Response>{
   const url=new URL(request.url),path=url.pathname;
+  if(isMailOAuthPath(path))return env.MAIL_CREDENTIALS?handleMailOAuth(request,{...env,MAIL_CREDENTIALS:env.MAIL_CREDENTIALS}):Response.json({error:'oauth_unavailable'},{status:503});
   if(!allowedPath(path))return Response.json({error:'not_found'},{status:404});
-  if(!/^Bearer emj_[a-f0-9]{64}$/.test(request.headers.get('Authorization')??''))return Response.json({error:'invalid_token'},{status:401});
+  if(!/^Bearer emj_[a-f0-9]{64}$/.test(request.headers.get('Authorization')??''))return Response.json({error:'invalid_token'},{status:401,headers:{'Cache-Control':'no-store',...(path==='/mcp'&&env.MAIL_MCP_PUBLIC_ORIGIN?{'WWW-Authenticate':`Bearer resource_metadata="${env.MAIL_MCP_PUBLIC_ORIGIN}/.well-known/oauth-protected-resource/mcp"`}:{})}});
   if(!env.MAIL_CREDENTIALS)return Response.json({error:'client_gateway_unavailable'},{status:503});
   try{
     const isUpload=path.startsWith('/jmap/upload/');
     const bytes=isUpload?undefined:await boundedBytes(request,MAX_REQUEST);
     const body=isUpload?boundedUploadStream(request,MAX_UPLOAD):bytes!.buffer as ArrayBuffer;
-    const target=new URL('https://mail.internal/internal/client-jmap');target.searchParams.set('path',path+url.search);
+    const target=new URL(path==='/mcp'?'https://mail.internal/internal/client-mcp':'https://mail.internal/internal/client-jmap');target.searchParams.set('path',path+url.search);
     const forwardHeaders=new Headers({'Authorization':request.headers.get('Authorization')??'','X-Mail-Client-Origin':url.origin});
     if(request.headers.has('Content-Type'))forwardHeaders.set('Content-Type',request.headers.get('Content-Type')!);
     if(isUpload&&request.headers.has('Content-Length'))forwardHeaders.set('Content-Length',request.headers.get('Content-Length')!);

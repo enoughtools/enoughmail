@@ -22,6 +22,8 @@ async function configure() {
   const account = option('--account'), owner = option('--owner'), team = option('--team'), audience = option('--audience'), hostname = option('--hostname');
   const name = option('--name') ?? 'enough-mail';
   if (!/^[a-f0-9]{32}$/i.test(account ?? '') || !owner || !/^[a-z0-9-]+\.cloudflareaccess\.com$/.test(team ?? '') || !audience || !/^(?:[a-z0-9-]+\.)+[a-z]{2,63}$/.test(hostname ?? '') || !/^[a-z][a-z0-9-]{0,39}$/.test(name)) throw new Error('Use --account ACCOUNT_ID --owner ACCESS_SUBJECT --team TEAM.cloudflareaccess.com --audience ACCESS_AUD --hostname mail.example.com [--name enough-mail].');
+  const mcpHostname = option('--mcp-hostname'), mcpRedirect = option('--mcp-redirect-uri');
+  if (mcpHostname && (!/^(?:[a-z0-9-]+\.)+[a-z]{2,63}$/.test(mcpHostname) || mcpHostname === hostname || !mcpRedirect || !mcpRedirect.startsWith('https://') || new URL(mcpRedirect).username || new URL(mcpRedirect).password || new URL(mcpRedirect).hash)) throw new Error('Use a separate --mcp-hostname and the exact HTTPS --mcp-redirect-uri shown in plugin management.');
   const file = resolve(local, 'mail.json');
   try { await readFile(file); throw new Error('Standalone configuration already exists. Edit .open-cloud/mail-standalone/*.json to preserve its resource names.'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -41,6 +43,13 @@ async function configure() {
   ingress.name = `${name}-ingress`; ingress.account_id = account; ingress.main = resolve(root, 'apps/mail/src/ingress.ts');
   ingress.durable_objects.bindings.forEach(binding => { binding.script_name = name; });
   ingress.r2_buckets = app.r2_buckets;
+  if (mcpHostname) {
+    const oauth = { MAIL_MCP_PUBLIC_ORIGIN: `https://${mcpHostname}`, MAIL_MCP_WORKSPACE_ORIGIN: `https://${hostname}`, MAIL_MCP_CLIENT_ID: 'enoughmail-chatgpt', MAIL_MCP_REDIRECT_URIS: mcpRedirect };
+    Object.assign(app.vars, oauth, { MAIL_MCP_CALLBACK_ORIGINS: option('--mcp-callback-origins') ?? '' });
+    ingress.vars = { ...(ingress.vars ?? {}), ...oauth };
+    ingress.routes = [{ pattern: mcpHostname, custom_domain: true }];
+  }
+
   const scanner = await load(resolve(root, 'apps/mail/scanner.wrangler.json'));
   scanner.name = `${name}-scanner`; scanner.account_id = account; scanner.main = resolve(root, 'apps/mail/scanner-worker.ts');
   scanner.containers[0].image = resolve(root, 'apps/mail/scanner/Dockerfile');

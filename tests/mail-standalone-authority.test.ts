@@ -64,6 +64,40 @@ describe('Mail standalone private authority', () => {
     await f.call(`/api/native-resources/${id}/grants`, 'PUT', { operationId: crypto.randomUUID(), expectedVersion: 2, grants: [] });
     expect((await verify({ lease, jobId, actions: ['mail.read'] })).status).toBe(403);
   });
+  it('discovers existing and future accounts through a bounded workspace connection', async () => {
+    const f = fixture();
+    const first = await (await f.create()).json(); await f.create('member');
+    const jobId = crypto.randomUUID(), expiresAt = Date.now() + 60000;
+    const body = { operationId: crypto.randomUUID(), jobId, expiresAt, actions: ['mail.read'] };
+    const grant = await (await f.call('/api/mail-client-grants', 'POST', body)).json();
+    expect(await (await f.call('/api/mail-client-grants', 'POST', body)).json()).toEqual(grant);
+    expect((await f.call('/api/mail-client-grants', 'POST', { ...body, actions: ['mail.send'] })).status).toBe(409);
+    const call = (operation: string, extra = {}) => f.call('/internal/mail-client-grants/' + operation, 'POST', { lease: grant.lease, jobId, ...extra }, 'stranger');
+    expect((await (await call('accounts')).json()).resources.map((value: any) => value.id)).toEqual([first.resourceId]);
+    const proof = await (await call('account', { accountId: first.resourceId })).json();
+    expect(proof.resource.effectiveActions).toEqual(['mail.read']);
+    f.restart(); expect((await (await call('account', { accountId: first.resourceId })).json()).lease).toBe(proof.lease);
+    const next = await (await f.create()).json();
+    expect((await (await call('accounts')).json()).resources.map((value: any) => value.id)).toEqual([first.resourceId, next.resourceId]);
+    expect((await f.call(`/internal/native-resources/${first.resourceId}/revalidate`, 'POST', { lease: proof.lease, jobId, actions: ['mail.send'] }, 'stranger')).status).toBe(403);
+    expect((await call('revalidate', { jobId: 'wrong' })).status).toBe(403);
+    expect((await call('account', { accountId: crypto.randomUUID() })).status).toBe(404);
+    f.env.MAIL_OWNER_SUBJECT = '';
+    expect((await call('accounts')).status).toBe(403);
+  });
+  it('losing one account grant does not revoke the other accounts in a workspace connection', async () => {
+    const f = fixture(), first = await (await f.create()).json(), second = await (await f.create()).json();
+    for (const id of [first.resourceId, second.resourceId]) await f.call(`/api/native-resources/${id}/grants`, 'PUT', { operationId: crypto.randomUUID(), expectedVersion: 1, grants: [{ actorId: 'member', actions: ['mail.read'] }] });
+    const jobId = crypto.randomUUID();
+    const { lease } = await (await f.call('/api/mail-client-grants', 'POST', { operationId: crypto.randomUUID(), jobId, expiresAt: Date.now() + 60000, actions: ['mail.read', 'mail.send'] }, 'member')).json();
+    const call = (operation: string, extra = {}) => f.call('/internal/mail-client-grants/' + operation, 'POST', { lease, jobId, ...extra }, 'stranger');
+    const proof = await (await call('account', { accountId: first.resourceId })).json(); expect(proof.resource.effectiveActions).toEqual(['mail.read']);
+    await f.call(`/api/native-resources/${first.resourceId}/grants`, 'PUT', { operationId: crypto.randomUUID(), expectedVersion: 2, grants: [] });
+    expect((await call('account', { accountId: first.resourceId })).status).toBe(403);
+    expect((await (await call('accounts')).json()).resources.map((value: any) => value.id)).toEqual([second.resourceId]);
+    expect((await f.call(`/internal/native-resources/${first.resourceId}/revalidate`, 'POST', { lease: proof.lease, jobId, actions: ['mail.read'] })).status).toBe(403);
+    f.env.MAIL_MEMBER_SUBJECTS = '[]'; expect((await call('revalidate')).status).toBe(403);
+  });
   it('serves the web account/session APIs with the standalone provider and no Core', async () => {
     const f = fixture();
     // The trusted composition root adds this header after JWT verification.

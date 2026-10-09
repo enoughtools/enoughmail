@@ -9,9 +9,9 @@ interface McpEnv extends AuthenticationEnv {
   CORE?: AssetFetcher;
   MAIL_ACCOUNTS: { idFromName(name: string): unknown; get(id: unknown): AssetFetcher };
 }
-interface Authorization {
+export interface MailMcpAuthorization {
   resourceId: string; organizationId: string; workspaceId: string;
-  actor: { id: string }; effectiveActions: string[]; membershipRole?: string; jobLease?: string;
+  actor: { id: string }; effectiveActions: string[]; membershipRole?: string; jobLease?: string; jobLeaseExpiresAt?: number; authorityProof?: Record<string, unknown>;
 }
 interface Tool { method: string; actions: string[]; write: boolean; role: boolean; lease: boolean }
 const methods: Record<string, Tool> = {
@@ -290,7 +290,7 @@ const methods: Record<string, Tool> = {
 };
 const object = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
-function validateArgs(toolName: string, value: unknown): Record<string, unknown> {
+export function validateMailToolArgs(toolName: string, value: unknown): Record<string, unknown> {
   const descriptor = manifest.mcp.tools.find(tool => tool.name === toolName);
   if (!descriptor || !object(value)) throw new Error('Invalid tool arguments');
   const rawSchema: unknown = descriptor.inputSchema;
@@ -346,17 +346,17 @@ export async function handleMailMcp(request: Request, env: McpEnv): Promise<Resp
     const toolName = body.tool, tool = methods[toolName];
     const registered = manifest.mcp.tools.find(descriptor => descriptor.name === toolName);
     if (!tool || !registered || JSON.stringify(tool.actions) !== JSON.stringify(registered.actions)) throw new Error('Unknown or mismatched tool authorization');
-    const args = validateArgs(toolName, body.arguments);
+    const args = validateMailToolArgs(toolName, body.arguments);
     const claims = await verifyDelegation(request, env, { audience: 'mail', body: raw });
     if (claims.fileId !== args.resourceId || tool.actions.some(action => !claims.actions.includes(action))) throw new Error('Permission denied');
     const delegation = request.headers.get(DELEGATION_HEADER);
     const authorityExpiresAt = Date.now() + 90 * 86400000 - 60000; // Stay below the authority limit despite clock skew.
-    const authorize = async (issueLease = false): Promise<Authorization> => {
-      let selected: Authorization | undefined;
+    const authorize = async (issueLease = false): Promise<MailMcpAuthorization> => {
+      let selected: MailMcpAuthorization | undefined;
       for (const action of tool.actions) {
         const response = await env.CORE!.fetch(new Request('https://core.internal/internal/policy/authorize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ resourceId: args.resourceId, action, delegation, delegatedBody: raw, ...(issueLease && tool.lease && action === 'mail.send' ? { jobId: args.operationId, expiresAt: authorityExpiresAt } : {}) }) }));
         if (!response.ok) throw new Error('Permission denied');
-        const value = await response.json() as { allowed: boolean; nativeResourceAuthorization?: Authorization };
+        const value = await response.json() as { allowed: boolean; nativeResourceAuthorization?: MailMcpAuthorization };
         const auth = value.nativeResourceAuthorization;
         if (!value.allowed || !auth || auth.resourceId !== args.resourceId || auth.actor.id !== claims.actorId || auth.organizationId !== claims.organizationId || auth.workspaceId !== claims.workspaceId || !auth.effectiveActions.includes(action)) throw new Error('Permission denied');
         if (tool.role && !['owner', 'administrator'].includes(auth.membershipRole ?? '')) throw new Error('DNS tools require current verified workspace owner or administrator membership.');
@@ -364,18 +364,33 @@ export async function handleMailMcp(request: Request, env: McpEnv): Promise<Resp
         selected = auth;
       }
       if (!selected || tool.lease && issueLease && !selected.jobLease) throw new Error('Sending lease unavailable');
-      return selected;
+      return { ...selected, jobLeaseExpiresAt: authorityExpiresAt };
     };
-    const auth = await authorize(true);
-    const methodArgs = { accountId: auth.resourceId, ...methodArguments(toolName, args), ...(tool.write ? { operationId: args.operationId, ifInState: `m${Number(args.expectedSequence).toString(36)}` } : {}) };
-    const response = await env.MAIL_ACCOUNTS.get(env.MAIL_ACCOUNTS.idFromName(auth.resourceId)).fetch(new Request('https://mail-account.internal/jmap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-      accountId: auth.resourceId, organizationId: auth.organizationId, workspaceId: auth.workspaceId,
-      actor: { id: auth.actor.id, actions: auth.effectiveActions, workspaceRole: auth.membershipRole }, ...(auth.jobLease ? { authorityProof: { lease: auth.jobLease, jobId: args.operationId, expiresAt: authorityExpiresAt, actions: [...registered.actions] } } : {}),
-      request: { using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail', 'urn:ietf:params:jmap:submission', 'urn:enough:params:jmap:mail'], methodCalls: [[tool.method, methodArgs, 'mcp']], ...(tool.write ? { requestId: args.operationId } : {}) },
-    }) }));
-    if (!response.ok) throw new Error('Mail operation failed');
-    const result: unknown = await response.json();
-    await authorize();
-    return Response.json({ content: [{ type: 'text', text: JSON.stringify(result) }] });
+    return await executeMailTool(toolName, args, env.MAIL_ACCOUNTS, authorize);
   } catch (error) { return Response.json({ error: 'forbidden', message: error instanceof Error ? error.message : 'The delegated Mail request is invalid or unavailable.' }, { status: 403 }); }
 }
+
+/** Product-owned command adapter shared by Core delegation and standalone credentials. */
+export async function executeMailTool(
+  toolName: string, input: unknown, accounts: McpEnv['MAIL_ACCOUNTS'],
+  authorize: (issueLease?: boolean) => Promise<MailMcpAuthorization>,
+): Promise<Response> {
+  const args = validateMailToolArgs(toolName, input);
+  const tool = methods[toolName];
+  if (!tool) throw new Error('Unknown Mail tool');
+  const auth = await authorize(true);
+  if (auth.resourceId !== args.resourceId || tool.actions.some(action => !auth.effectiveActions.includes(action)) || tool.role && !['owner', 'administrator'].includes(auth.membershipRole ?? '')) throw new Error('Permission denied');
+  const methodArgs = { accountId: auth.resourceId, ...methodArguments(toolName, args), ...(tool.write ? { operationId: args.operationId, ifInState: `m${Number(args.expectedSequence).toString(36)}` } : {}) };
+  const response = await accounts.get(accounts.idFromName(auth.resourceId)).fetch(new Request('https://mail-account.internal/jmap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    accountId: auth.resourceId, organizationId: auth.organizationId, workspaceId: auth.workspaceId,
+    actor: { id: auth.actor.id, actions: auth.effectiveActions, workspaceRole: auth.membershipRole }, ...(auth.authorityProof ? { authorityProof: auth.authorityProof } : auth.jobLease ? { authorityProof: { lease: auth.jobLease, jobId: args.operationId, expiresAt: auth.jobLeaseExpiresAt, actions: [...tool.actions] } } : {}),
+    request: { using: ['urn:ietf:params:jmap:core', 'urn:ietf:params:jmap:mail', 'urn:ietf:params:jmap:submission', 'urn:enough:params:jmap:mail'], methodCalls: [[tool.method, methodArgs, 'mcp']], ...(tool.write ? { requestId: args.operationId } : {}) },
+  }) }));
+  if (!response.ok) throw new Error('Mail operation failed');
+  const result: unknown = await response.json();
+  await authorize();
+  const failed = object(result) && Array.isArray(result.methodResponses) && result.methodResponses.some((entry: unknown) => Array.isArray(entry) && (entry[0] === 'error' || object(entry[1]) && ['notCreated','notUpdated','notDestroyed'].some(key => object(entry[1][key]) && Object.keys(entry[1][key]).length > 0)));
+  return Response.json({ ...(failed ? { isError: true } : {}), content: [{ type: 'text', text: JSON.stringify(result) }] });
+}
+export function mailToolActions(name: string): readonly string[] { return methods[name]?.actions ?? []; }
+export function mailToolRequiresRole(name: string): boolean { return methods[name]?.role ?? false; }
