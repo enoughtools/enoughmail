@@ -1,0 +1,41 @@
+name = "enough-mail-native-auth"
+main = "native/auth/worker.ts"
+compatibility_date = "2026-10-05"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+preview_urls = false
+keep_vars = true
+
+[vars]
+DEPLOYMENT_ORIGIN = "https://mail.example.com"
+AUTH_PROVIDER = "cloudflare-access"
+ACCESS_TEAM_DOMAIN = "your-team.cloudflareaccess.com"
+ACCESS_AUDIENCE = "replace-with-your-existing-mail-access-audience"
+
+[[services]]
+binding = "MAIL"
+service = "enough-mail"
+
+[[services]]
+binding = "NATIVE_MAIL"
+service = "enough-mail"
+entrypoint = "NativeMail"
+
+[[durable_objects.bindings]]
+name = "CODES"
+class_name = "MailNativeCodes"
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "MailNativeSessions"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["MailNativeCodes"]
+
+[[migrations]]
+tag = "v2-persistent-native-sessions"
+new_sqlite_classes = ["MailNativeSessions"]
+
+# Add the installation's existing host route for /apps/mail/native/*.
+# Preserve existing bindings, vars, secrets and migration history when upgrading.

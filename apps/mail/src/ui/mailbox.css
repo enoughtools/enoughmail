@@ -240,3 +240,6 @@
 .mail-domain-review {grid-column:1/-1;padding:16px;background:var(--color-surface,#fff);border:1px solid var(--color-border,#d5d7df);}
 .mail-domain-review h4 {margin:0 0 8px;}
 @media(max-width:600px){.mail-domain-candidates > li{grid-template-columns:minmax(0,1fr);padding:16px;gap:12px;}.mail-domain-candidates > li > button{justify-self:start;}}
+
+/* The native shell fills the display; keep its controls inside device insets. */
+.mail-app[data-native-platform="iOS"]{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}

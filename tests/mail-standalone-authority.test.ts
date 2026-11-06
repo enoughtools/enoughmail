@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { StandaloneMailAuthority } from '../apps/mail/src/server/standalone-authority';
 import { mailAuthority } from '../apps/mail/src/server/authority';
 import { createMailWorker } from '../apps/mail/src/worker';
 import type { DirectoryStorage } from '../apps/mail/src/server/directory';
+
+// Node tests exercise the public handler; the named service entrypoint runs in
+// workerd, where Cloudflare provides this runtime base class.
+vi.mock('cloudflare:workers', () => ({ WorkerEntrypoint: class {} }));
 
 class MemoryStorage implements DirectoryStorage {
   values = new Map<string, unknown>();

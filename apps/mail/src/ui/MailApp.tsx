@@ -1,3 +1,4 @@
+import { nativeConnection } from './native-connection';
 import {useMailConfirm} from './use-mail-confirm';
 import { MailViewCache } from './view-cache';
 import { MailConversationCache } from './conversation-cache';
@@ -430,7 +431,7 @@ export default function MailApp() {
         </section>
       </div>
     </MailFrame>;
-    return <MailFrame currentApp={{ id: 'mail', name: 'Mail' }} user={context.user} apps={context.apps} layout="workspace"><div className="mail-app" role={standalone ? 'main' : undefined} tabIndex={-1} data-density={preferences[currentAccount]?.density||'comfortable'} id={standalone ? 'main' : undefined}>{confirmationDialog}
+    return <MailFrame currentApp={{ id: 'mail', name: 'Mail' }} user={context.user} apps={context.apps} layout="workspace"><div className="mail-app" data-native-platform={nativeConnection()?.platform} role={standalone ? 'main' : undefined} tabIndex={-1} data-density={preferences[currentAccount]?.density||'comfortable'} id={standalone ? 'main' : undefined}>{confirmationDialog}
  <aside className={`mail-sidebar ${mobileNavOpen ? 'mobile-nav-open' : ''}`}>
    <div className="mail-sidebar-brand"><a className="mail-wordmark" href="/apps/mail/" onClick={event=>{if(event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;event.preventDefault();navigate('inbox');}}><MailBrand /></a><Button className="mail-mobile-menu-toggle" variant="ghost" size="icon-sm" aria-label="Mail navigation" aria-expanded={mobileNavOpen} onClick={() => setMobileNavOpen(value => !value)}><Menu /></Button></div>
    <Button size="sm" className="mail-compose-button" onClick={() => { openComposer(); }}><FilePenLine /> Compose</Button>
