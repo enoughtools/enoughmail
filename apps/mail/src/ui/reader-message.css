@@ -5,7 +5,7 @@
   min-height: 0;
   border: 0;
   background: white;
-  overflow: hidden;
+  overflow: auto;
 }
 .mail-app .mail-message-body { white-space: pre-wrap; overflow-wrap: anywhere; }
 .mail-app .mail-message-body a { overflow-wrap: anywhere; }

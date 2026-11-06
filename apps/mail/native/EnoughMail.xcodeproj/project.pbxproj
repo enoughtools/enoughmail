@@ -1,0 +1,459 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01295E2CC9468678B1450F12 /* SessionValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10C1801C3781192202B1C028 /* SessionValidation.swift */; };
+		0143DA0B7B333DA78DD8DB42 /* MailWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58984A49EF79343CEDADD74 /* MailWebView.swift */; };
+		0798207D440D514829C01B97 /* Deployment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E75C77936E69407FDDD31F9 /* Deployment.swift */; };
+		288B1567D2A2DEC2EBE87B2A /* MailPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8BD5BE88B5F8C0B334A3212 /* MailPush.swift */; };
+		2D802BFF372148A6FF91C11B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D4A256AEDB90024334EC46EC /* PrivacyInfo.xcprivacy */; };
+		2EB2AF0A27BF1770B61703B5 /* MailCommandPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 029D8B054CC76C345F54243F /* MailCommandPolicy.swift */; };
+		327A7D19D370620CD479E4D2 /* Deployment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E75C77936E69407FDDD31F9 /* Deployment.swift */; };
+		3E4AD4E275DC7F765C7AF6F3 /* MailWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B58984A49EF79343CEDADD74 /* MailWebView.swift */; };
+		422A36BE6493C1B255137CBA /* EnoughMailApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F4791D29100A0C83B038162 /* EnoughMailApp.swift */; };
+		5023B0F8336A29D857DAFE9B /* MailCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4EBBB47D8D0E2DAD1AF48AE /* MailCommands.swift */; };
+		58F8CF39F774DF6ACDE775A8 /* SessionValidation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10C1801C3781192202B1C028 /* SessionValidation.swift */; };
+		5A7465466BC985FF98030585 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0F85D0853DC4B6C7627B389 /* Assets.xcassets */; };
+		6565FDEB20255EB2D05153A3 /* EnoughMailApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F4791D29100A0C83B038162 /* EnoughMailApp.swift */; };
+		7F5ED5E669BE532D389B93E9 /* MailNotificationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00816F745355613656A236 /* MailNotificationDestination.swift */; };
+		9225656C01CA60B6F666B5A4 /* MailPush.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8BD5BE88B5F8C0B334A3212 /* MailPush.swift */; };
+		A3EE45041857253213A96756 /* MailNotificationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B00816F745355613656A236 /* MailNotificationDestination.swift */; };
+		B8F82E8A60F917C71F13AFE5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0F85D0853DC4B6C7627B389 /* Assets.xcassets */; };
+		CDCA9D9E767633557D125FCC /* ConnectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94570CB28A57201D16971EA5 /* ConnectionModel.swift */; };
+		D428B690343E7120538A2AC6 /* ConnectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94570CB28A57201D16971EA5 /* ConnectionModel.swift */; };
+		DFA72E9110195E34F135FFE4 /* MailCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4EBBB47D8D0E2DAD1AF48AE /* MailCommands.swift */; };
+		F0A50E858F6EA03C5E29443C /* MailCommandPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 029D8B054CC76C345F54243F /* MailCommandPolicy.swift */; };
+		FBF76E154F3FC3A6CEF73948 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = D4A256AEDB90024334EC46EC /* PrivacyInfo.xcprivacy */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		029D8B054CC76C345F54243F /* MailCommandPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailCommandPolicy.swift; sourceTree = "<group>"; };
+		10C1801C3781192202B1C028 /* SessionValidation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionValidation.swift; sourceTree = "<group>"; };
+		2B00816F745355613656A236 /* MailNotificationDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailNotificationDestination.swift; sourceTree = "<group>"; };
+		3E75C77936E69407FDDD31F9 /* Deployment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deployment.swift; sourceTree = "<group>"; };
+		4F4791D29100A0C83B038162 /* EnoughMailApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnoughMailApp.swift; sourceTree = "<group>"; };
+		537C6D4589F17B9DF464FE67 /* EnoughMail-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "EnoughMail-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6A65B2B6AC289250038B73EF /* iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iOS.entitlements; sourceTree = "<group>"; };
+		71301168E7B62AFF1B225A89 /* macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = macOS.entitlements; sourceTree = "<group>"; };
+		8AFE25E902A2CD73C8D54D19 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		94570CB28A57201D16971EA5 /* ConnectionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionModel.swift; sourceTree = "<group>"; };
+		985DFEE280149578B298F36E /* EnoughMail-iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "EnoughMail-iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		A0F85D0853DC4B6C7627B389 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B4EBBB47D8D0E2DAD1AF48AE /* MailCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailCommands.swift; sourceTree = "<group>"; };
+		B58984A49EF79343CEDADD74 /* MailWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailWebView.swift; sourceTree = "<group>"; };
+		D4A256AEDB90024334EC46EC /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F8BD5BE88B5F8C0B334A3212 /* MailPush.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailPush.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		516C1029C648081945FFDC3B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				985DFEE280149578B298F36E /* EnoughMail-iOS.app */,
+				537C6D4589F17B9DF464FE67 /* EnoughMail-macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C3DC3E1FDFC37BC2E8973238 = {
+			isa = PBXGroup;
+			children = (
+				E728F9AE43469A52659E272D /* Apple */,
+				516C1029C648081945FFDC3B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E728F9AE43469A52659E272D /* Apple */ = {
+			isa = PBXGroup;
+			children = (
+				A0F85D0853DC4B6C7627B389 /* Assets.xcassets */,
+				94570CB28A57201D16971EA5 /* ConnectionModel.swift */,
+				3E75C77936E69407FDDD31F9 /* Deployment.swift */,
+				4F4791D29100A0C83B038162 /* EnoughMailApp.swift */,
+				8AFE25E902A2CD73C8D54D19 /* Info.plist */,
+				6A65B2B6AC289250038B73EF /* iOS.entitlements */,
+				71301168E7B62AFF1B225A89 /* macOS.entitlements */,
+				029D8B054CC76C345F54243F /* MailCommandPolicy.swift */,
+				B4EBBB47D8D0E2DAD1AF48AE /* MailCommands.swift */,
+				2B00816F745355613656A236 /* MailNotificationDestination.swift */,
+				F8BD5BE88B5F8C0B334A3212 /* MailPush.swift */,
+				B58984A49EF79343CEDADD74 /* MailWebView.swift */,
+				D4A256AEDB90024334EC46EC /* PrivacyInfo.xcprivacy */,
+				10C1801C3781192202B1C028 /* SessionValidation.swift */,
+			);
+			path = Apple;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5C19C5F7C7A4CC0C29AEBA40 /* EnoughMail-iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5FB9F7F9BF4F21179873FCCB /* Build configuration list for PBXNativeTarget "EnoughMail-iOS" */;
+			buildPhases = (
+				E8524EF1EF5882D7A19352BA /* Sources */,
+				590850C8E53BE46E1069F7F2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "EnoughMail-iOS";
+			packageProductDependencies = (
+			);
+			productName = "EnoughMail-iOS";
+			productReference = 985DFEE280149578B298F36E /* EnoughMail-iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F21479DE393F785067EE6B8C /* EnoughMail-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D2CA765DD87801904DB9BF0 /* Build configuration list for PBXNativeTarget "EnoughMail-macOS" */;
+			buildPhases = (
+				F5FE0DAE08D1C4991FD88341 /* Sources */,
+				AC45AAD788C515441324ECD2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "EnoughMail-macOS";
+			packageProductDependencies = (
+			);
+			productName = "EnoughMail-macOS";
+			productReference = 537C6D4589F17B9DF464FE67 /* EnoughMail-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		32DD3DCF76924F1D03AD3EE9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					5C19C5F7C7A4CC0C29AEBA40 = {
+						DevelopmentTeam = FGXHYHH9MC;
+						ProvisioningStyle = Automatic;
+					};
+					F21479DE393F785067EE6B8C = {
+						DevelopmentTeam = FGXHYHH9MC;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 36BF24C8C7D09FB3222E1A1A /* Build configuration list for PBXProject "EnoughMail" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C3DC3E1FDFC37BC2E8973238;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 516C1029C648081945FFDC3B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5C19C5F7C7A4CC0C29AEBA40 /* EnoughMail-iOS */,
+				F21479DE393F785067EE6B8C /* EnoughMail-macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		590850C8E53BE46E1069F7F2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5A7465466BC985FF98030585 /* Assets.xcassets in Resources */,
+				FBF76E154F3FC3A6CEF73948 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AC45AAD788C515441324ECD2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B8F82E8A60F917C71F13AFE5 /* Assets.xcassets in Resources */,
+				2D802BFF372148A6FF91C11B /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E8524EF1EF5882D7A19352BA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D428B690343E7120538A2AC6 /* ConnectionModel.swift in Sources */,
+				0798207D440D514829C01B97 /* Deployment.swift in Sources */,
+				6565FDEB20255EB2D05153A3 /* EnoughMailApp.swift in Sources */,
+				2EB2AF0A27BF1770B61703B5 /* MailCommandPolicy.swift in Sources */,
+				5023B0F8336A29D857DAFE9B /* MailCommands.swift in Sources */,
+				A3EE45041857253213A96756 /* MailNotificationDestination.swift in Sources */,
+				288B1567D2A2DEC2EBE87B2A /* MailPush.swift in Sources */,
+				3E4AD4E275DC7F765C7AF6F3 /* MailWebView.swift in Sources */,
+				58F8CF39F774DF6ACDE775A8 /* SessionValidation.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5FE0DAE08D1C4991FD88341 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDCA9D9E767633557D125FCC /* ConnectionModel.swift in Sources */,
+				327A7D19D370620CD479E4D2 /* Deployment.swift in Sources */,
+				422A36BE6493C1B255137CBA /* EnoughMailApp.swift in Sources */,
+				F0A50E858F6EA03C5E29443C /* MailCommandPolicy.swift in Sources */,
+				DFA72E9110195E34F135FFE4 /* MailCommands.swift in Sources */,
+				7F5ED5E669BE532D389B93E9 /* MailNotificationDestination.swift in Sources */,
+				9225656C01CA60B6F666B5A4 /* MailPush.swift in Sources */,
+				0143DA0B7B333DA78DD8DB42 /* MailWebView.swift in Sources */,
+				01295E2CC9468678B1450F12 /* SessionValidation.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		08D8A8D78C9591EC7517B8E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2026.11.6;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FGXHYHH9MC;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Apple/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = EnoughMail;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		83D8E43600B69D2754BA4FC4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2026.11.6;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FGXHYHH9MC;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Apple/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = EnoughMail;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		88FC39D2432EBA16AEE61C09 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Apple/iOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Apple/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = tools.enough.mail;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8A0CE38C161D95001A638192 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Apple/macOS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Apple/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = tools.enough.mail;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		973DE3A0BD8F7C43C01CE4C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Apple/iOS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Apple/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = tools.enough.mail;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D1D10730F1BF7E916C5149DC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Apple/macOS.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = Apple/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = tools.enough.mail;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		36BF24C8C7D09FB3222E1A1A /* Build configuration list for PBXProject "EnoughMail" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83D8E43600B69D2754BA4FC4 /* Debug */,
+				08D8A8D78C9591EC7517B8E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5FB9F7F9BF4F21179873FCCB /* Build configuration list for PBXNativeTarget "EnoughMail-iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				973DE3A0BD8F7C43C01CE4C9 /* Debug */,
+				88FC39D2432EBA16AEE61C09 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7D2CA765DD87801904DB9BF0 /* Build configuration list for PBXNativeTarget "EnoughMail-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D1D10730F1BF7E916C5149DC /* Debug */,
+				8A0CE38C161D95001A638192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 32DD3DCF76924F1D03AD3EE9 /* Project object */;
+}
